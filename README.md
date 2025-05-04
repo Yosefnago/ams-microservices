@@ -49,7 +49,7 @@ Shared utility classes and functions used across multiple microservices.
 ### 🔐 Common Security
 Shared security components, including JWT authentication utilities, used across microservices.
 
-## 🛠️ Setup and Installation
+## 🛠️ Setup 
 
 ### ✅ Prerequisites
 

@@ -6,13 +6,13 @@
 The application is structured as a collection of microservices, each responsible for specific business functionality:
 
 AMS System
-├── API Gateway (gateway-service)
-├── Service Discovery (eureka-server)
-├── User Management (user-service)
-├── Client Management (client-service)
-├── UI Service (ui-service)
-├── Common Utilities (common-utils)
-└── Common Security (common-security)
+- **API Gateway** (gateway-service)
+- **Service Discovery** (eureka-server)
+- **User Management** (user-service)
+- **Client Management** (client-service)
+- **UI Service** (ui-service)
+- **Common Utilities** (common-utils)
+- **Common Security** (common-security)
 
 ## ⚙️ Technologies Used
 - **Java 17**

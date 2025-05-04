@@ -62,6 +62,4 @@ Shared security components, including JWT authentication utilities, used across 
 ### Contributors
 **Yosef Nago** – Project architect and core developer
 
-## 📄 License
 
-This project is not licensed for reuse. All rights reserved © Yosef Nago.

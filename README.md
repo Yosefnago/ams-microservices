@@ -24,7 +24,6 @@ AMS System
 - **Vaadin 24.6.6**
 - **Netflix Eureka**
 - **Spring Cloud Gateway**
-- **OpenFeign**
 - **Maven**
   
 ## 📦 Module Descriptions

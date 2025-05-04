@@ -29,10 +29,10 @@ AMS System
 ## 📦 Module Descriptions
 
 ### 🛡️ Gateway Service
-The API Gateway that routes all client requests to the appropriate microservices. It handles authentication, request routing, and load balancing.
+The API Gateway that routes all client requests to the appropriate microservices. It handles authentication, request routing.
 
 ### 🔍 Eureka Server
-Service discovery server that allows microservices to find and communicate with each other without hardcoding hostname and port.
+Service discovery server that allows microservices to find and communicate with each other.
 
 ### 👤 User Service
 Manages user accounts, authentication, and authorization. Handles user registration, login, and profile management.

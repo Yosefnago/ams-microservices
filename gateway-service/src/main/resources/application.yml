@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: ams-gateway
+  main:
+    web-application-type: reactive
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: lb://user-service
+          predicates:
+            - Path=/auth/login,/auth/register
+
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/user/**
+
+
+        - id: client-service
+          uri: lb://client-service
+          predicates:
+            - Path=/client/**
+
+
+        - id: ui-service
+          uri: lb://ui-service
+          predicates:
+            - Path=/, /index, /index.html, /app/**, /VAADIN/**, /frontend/**, /favicon.ico
+
+server:
+  port: 8080
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8762/eureka
+    register-with-eureka: true
+    fetch-registry: true
+jwt:
+  secret: ZGVmYXVsdC1zZWN1cmUtc2VjcmV0LWp3dC1rZXktMTIzNDU2Nzg5MDEyMzQ1Ng==
+

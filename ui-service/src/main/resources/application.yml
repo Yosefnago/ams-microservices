@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: ui-service
+
+server:
+  port: 8082
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8762/eureka
+
+  instance:
+    hostname: localhost
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+jwt:
+  secret: ZGVmYXVsdC1zZWN1cmUtc2VjcmV0LWp3dC1rZXktMTIzNDU2Nzg5MDEyMzQ1Ng==

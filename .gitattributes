@@ -1,2 +1,6 @@
 /mvnw text eol=lf
 *.cmd text eol=crlf
+# Ignore generated frontend files from language statistics
+ui-service/src/main/frontend/generated/** linguist-vendored
+ui-service/src/main/frontend/**/*.js linguist-vendored
+ui-service/src/main/frontend/**/*.ts linguist-vendored

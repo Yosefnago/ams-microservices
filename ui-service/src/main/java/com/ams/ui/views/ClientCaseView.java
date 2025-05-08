@@ -1,6 +1,20 @@
 package com.ams.ui.views;
 
 
+import com.vaadin.flow.component.html.UnorderedList;
+
+import com.vaadin.flow.component.html.ListItem;
+
+import com.vaadin.flow.component.html.Image;
+
+import com.vaadin.flow.component.html.Span;
+
+import com.vaadin.flow.component.menubar.MenuBar;
+
+import com.vaadin.flow.component.contextmenu.MenuItem;
+
+import com.vaadin.flow.component.contextmenu.SubMenu;
+
 import com.ams.dtos.clientDto.LoadClientCaseDetailsRequest;
 import com.ams.dtos.clientDto.UpdateClientResponse;
 import com.ams.ui.layouts.ClientCaseLayout;
@@ -51,7 +65,6 @@ import java.util.List;
  */
 @Route(value = "case/:clientId", layout = ClientCaseLayout.class)
 @PageTitle("Case")
-@UIScope
 public class ClientCaseView extends VerticalLayout implements BeforeEnterObserver {
 
     private List<TextField> allFields;
@@ -86,6 +99,7 @@ public class ClientCaseView extends VerticalLayout implements BeforeEnterObserve
         sideNavLayout.setHeightFull();
         sideNavLayout.getStyle().set("background-color", "#f0f0f0");
         sideNavLayout.add(sideNavBar());
+
 
         contentLayout = new VerticalLayout();
         contentLayout.setSizeFull();
@@ -133,6 +147,7 @@ public class ClientCaseView extends VerticalLayout implements BeforeEnterObserve
         duchutDiv.getStyle().set("background-color", "#f0f0f0");
         duchutDiv.getStyle().setHeight("100px");
         duchutDiv.getStyle().setWidth("200px");
+        
 
         horizontalLayout.add(duchutDiv,reportsDiv,invoicesDiv,documentsDiv);
 
@@ -144,6 +159,8 @@ public class ClientCaseView extends VerticalLayout implements BeforeEnterObserve
      * @return a collapsible SideNav component
      */
     private Component sideNavBar(){
+        
+
         SideNav sideNav = new SideNav("פעולות מהירות");
 
         sideNav.getStyle().setAlignSelf(Style.AlignSelf.END);
@@ -163,6 +180,7 @@ public class ClientCaseView extends VerticalLayout implements BeforeEnterObserve
         updateCase.getElement().addEventListener("click", e -> {
            contentLayout.removeAll();
            contentLayout.add(updateCaseDetails());
+
         });
 
 

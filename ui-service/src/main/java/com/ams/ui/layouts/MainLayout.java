@@ -49,7 +49,6 @@ import org.springframework.beans.factory.annotation.Autowired;
  *
  * @author Yosef Nago
  */
-@VaadinSessionScope
 public class MainLayout extends AppLayout implements BeforeEnterObserver {
 
 
@@ -65,7 +64,7 @@ public class MainLayout extends AppLayout implements BeforeEnterObserver {
         createNavigation();
     }
     /**
-     * Builds the top header layout, including logo, avatar, dark mode toggle, and user menu.
+     * Builds the top header layout, including logo, avatar, and user menu.
      */
     private void createHeader() {
         Image logo = new Image("logo.png", "לוגו");

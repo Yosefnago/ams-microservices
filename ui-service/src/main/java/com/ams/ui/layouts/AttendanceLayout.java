@@ -44,7 +44,6 @@ import org.springframework.web.client.RestTemplate;
  *
  * @author Yosef Nago
  */
-@VaadinSessionScope
 public class AttendanceLayout extends AppLayout implements BeforeEnterObserver {
 
     private String username;

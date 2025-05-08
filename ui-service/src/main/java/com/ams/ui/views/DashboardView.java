@@ -49,7 +49,6 @@ import org.springframework.web.client.RestTemplate;
 @PageTitle("Dashboard")
 public class DashboardView extends VerticalLayout {
 
-    private final MessagesView messages;
     RouterLink link;
     String accountantUsername;
     private String message;
@@ -57,7 +56,7 @@ public class DashboardView extends VerticalLayout {
     private final JwtUtil jwtUtil;
 
     @Autowired
-    public DashboardView(RestTemplate restTemplate, JwtUtil jwtUtil, MessagesView messages) {
+    public DashboardView(RestTemplate restTemplate, JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
         this.restTemplate = restTemplate;
         setSizeFull();
@@ -70,7 +69,6 @@ public class DashboardView extends VerticalLayout {
         horizontalLayout.add(pays(),workingTime(),divuachKarov(),documentCare(),numOfClients());
 
         add(horizontalLayout);
-        this.messages = messages;
     }
     /**
      * Creates a dashboard tile labeled "מסמכים לטיפול" (Documents to Handle).

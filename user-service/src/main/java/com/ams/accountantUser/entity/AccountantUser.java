@@ -27,8 +27,6 @@ import java.util.List;
  * @see com.ams.accountantUser.reposiroty.AccountantUserRepository
  */
 @Table(name = "accountant_Users")
-@AllArgsConstructor
-@NoArgsConstructor
 @Entity
 @Data
 public class AccountantUser {
@@ -55,6 +53,5 @@ public class AccountantUser {
 
     @Column(name = "Phone",unique = true)
     private String phone;
-
 
 }

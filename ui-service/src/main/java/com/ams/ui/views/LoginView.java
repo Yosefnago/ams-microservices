@@ -5,6 +5,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.login.LoginForm;
+import com.vaadin.flow.component.login.LoginOverlay;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
@@ -34,9 +35,8 @@ import org.springframework.web.client.RestTemplate;
 @AnonymousAllowed
 public class LoginView extends VerticalLayout {
 
-    private LoginForm loginForm;
     private final RestTemplate restTemplate;
-
+    private LoginOverlay loginOverlay;
     /**
      * Constructs the login view, setting up the UI components for user interaction.
      */
@@ -44,19 +44,32 @@ public class LoginView extends VerticalLayout {
         this.restTemplate = restTemplate;
 
         setSizeFull();
-        loginForm = new LoginForm();
-        Anchor registerLink = new Anchor("register", "Register");
-        Image logo = new Image("logoAuth.png","לוגו");
-        logo.setWidth("120px");
-        logo.setHeight("110px");
+        loginOverlay = new LoginOverlay();
+        loginOverlay.setTitle("Ams");
+        loginOverlay.setDescription("Accountant Management System");
 
-        setDefaultHorizontalComponentAlignment(Alignment.CENTER);
-        getStyle().set("justify-content", "center");
-        loginForm.setForgotPasswordButtonVisible(true);
 
-        loginForm.addLoginListener(a -> authenticate(a.getUsername(), a.getPassword()));
+        loginOverlay.addLoginListener(a -> authenticate(a.getUsername(), a.getPassword()));
+        loginOverlay.setOpened(true);
 
-        add(logo,loginForm, registerLink);
+        Anchor registerLink = new Anchor("/register", "אין לך חשבון? הירשם כאן");
+        registerLink.getStyle()
+                .set("position", "fixed")
+                .set("bottom", "20px")
+                .set("left", "50%")
+                .set("transform", "translateX(-50%)")
+                .set("z-index", "9999")
+                .set("padding", "5px")
+                .set("border-radius", "5px");
+        add(registerLink);
+
+        registerLink.getElement().addEventListener("click", e -> {
+           loginOverlay.setOpened(false);
+           UI.getCurrent().navigate(RegisterView.class);
+        });
+
+        add(loginOverlay);
+
     }
 
     /**
@@ -67,7 +80,8 @@ public class LoginView extends VerticalLayout {
      * @param password The user's password.
      */
     private void authenticate(String username, String password) {
-        loginForm.setEnabled(false);
+
+        loginOverlay.setEnabled(false);
         try {
             LoginRequest request = new LoginRequest(username, password);
 
@@ -83,18 +97,19 @@ public class LoginView extends VerticalLayout {
 
                 String token = response.getBody().token();
                 VaadinSession.getCurrent().setAttribute("jwt", token);
-                UI.getCurrent().navigate("dashboard");
+                loginOverlay.setOpened(false);
+                UI.getCurrent().navigate(DashboardView.class);
                 Notification
                         .show("Welcome " + username)
                         .setPosition(Notification.Position.MIDDLE);
             } else {
                 Notification.show(response.getBody().message(), 3000, Notification.Position.MIDDLE);
-                loginForm.setError(true);
+                loginOverlay.setError(true);
             }
         } catch (HttpClientErrorException e) {
-            loginForm.setError(true);
+            loginOverlay.setError(true);
         }finally {
-            loginForm.setEnabled(true);
+            loginOverlay.setEnabled(true);
         }
     }
 }

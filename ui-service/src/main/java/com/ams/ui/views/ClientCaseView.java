@@ -1,19 +1,6 @@
 package com.ams.ui.views;
 
 
-import com.vaadin.flow.component.html.UnorderedList;
-
-import com.vaadin.flow.component.html.ListItem;
-
-import com.vaadin.flow.component.html.Image;
-
-import com.vaadin.flow.component.html.Span;
-
-import com.vaadin.flow.component.menubar.MenuBar;
-
-import com.vaadin.flow.component.contextmenu.MenuItem;
-
-import com.vaadin.flow.component.contextmenu.SubMenu;
 
 import com.ams.dtos.clientDto.LoadClientCaseDetailsRequest;
 import com.ams.dtos.clientDto.UpdateClientResponse;
@@ -23,20 +10,15 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.sidenav.SideNav;
-import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.dom.Style;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.spring.annotation.UIScope;
-import com.vaadin.flow.theme.lumo.LumoUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
@@ -94,12 +76,6 @@ public class ClientCaseView extends VerticalLayout implements BeforeEnterObserve
         setSpacing(false);
 
 
-        VerticalLayout sideNavLayout = new VerticalLayout();
-        sideNavLayout.setWidth("200px");
-        sideNavLayout.setHeightFull();
-        sideNavLayout.getStyle().set("background-color", "#f0f0f0");
-        sideNavLayout.add(sideNavBar());
-
 
         contentLayout = new VerticalLayout();
         contentLayout.setSizeFull();
@@ -110,7 +86,7 @@ public class ClientCaseView extends VerticalLayout implements BeforeEnterObserve
         HorizontalLayout mainLayout = new HorizontalLayout();
 
         mainLayout.setSizeFull();
-        mainLayout.add(contentLayout,sideNavLayout);
+        mainLayout.add(contentLayout);
         mainLayout.setFlexGrow(1, contentLayout);
 
         add(mainLayout);
@@ -154,42 +130,8 @@ public class ClientCaseView extends VerticalLayout implements BeforeEnterObserve
         mainLayout.add(horizontalLayout);
         return mainLayout;
     }
-    /**
-     * Builds the SideNav component with quick actions like "Update Case", "Upload", and "Create Invoice".
-     * @return a collapsible SideNav component
-     */
-    private Component sideNavBar(){
-        
-
-        SideNav sideNav = new SideNav("פעולות מהירות");
-
-        sideNav.getStyle().setAlignSelf(Style.AlignSelf.END);
-        sideNav.setCollapsible(true);
-        sideNav.setExpanded(false);
-        sideNav.getElement().setAttribute("dir", "rtl");
-        sideNav.addItem(new SideNavItem("העלאת מסמכים", String.valueOf(VaadinIcon.UPLOAD.create())));
-        sideNav.addItem(new SideNavItem("ארכיון", String.valueOf(VaadinIcon.ARCHIVE.create())));
-        sideNav.addClassName(LumoUtility.Border.LEFT);
-        sideNav.addClassName(LumoUtility.FontSize.SMALL);
-
-        SideNavItem invoices = new SideNavItem("יצירת חשבונית");
-        invoices.addClassName(LumoUtility.FontSize.SMALL);
-
-        SideNavItem updateCase = new SideNavItem("עדכון פרטי תיק");
-        updateCase.addClassName(LumoUtility.FontSize.SMALL);
-        updateCase.getElement().addEventListener("click", e -> {
-           contentLayout.removeAll();
-           contentLayout.add(updateCaseDetails());
-
-        });
 
 
-        SideNavItem reports = new SideNavItem("דיווח מע''מ");
-        reports.addClassName(LumoUtility.FontSize.SMALL);
-
-        sideNav.addItem(updateCase,invoices,reports);
-        return sideNav;
-    }
     /**
      * Builds the form for updating client case details with REST data fetching and JWT authorization.
      * @return a vertical layout containing form fields and control buttons

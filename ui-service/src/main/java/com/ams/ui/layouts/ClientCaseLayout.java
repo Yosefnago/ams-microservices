@@ -4,6 +4,7 @@ import com.ams.dtos.clientDto.LoadClientDetailsCaseResponse;
 import com.ams.ui.views.ClientsView;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H6;
 import com.vaadin.flow.component.notification.Notification;
@@ -92,6 +93,11 @@ public class ClientCaseLayout extends AppLayout implements BeforeEnterObserver {
      */
     private void header() {
 
+        Button backButton = new Button("חזור");
+        backButton.addClickListener(e ->
+                UI.getCurrent().getPage().executeJs("window.history.back()")
+        );
+
         RouterLink backLink = new RouterLink("חיתוך חדש", ClientsView.class);
         backLink.getStyle().set("margin-left", "10px");
         backLink.addClassNames(
@@ -125,11 +131,16 @@ public class ClientCaseLayout extends AppLayout implements BeforeEnterObserver {
         clientDetailsLayout.setPadding(true);
         clientDetailsLayout.setAlignItems(FlexComponent.Alignment.START);
 
-        HorizontalLayout headerLayout = new HorizontalLayout(clientDetailsLayout, backLink);
+        HorizontalLayout buttonsLayout = new HorizontalLayout(backButton, backLink);
+        buttonsLayout.setSpacing(true);
+        buttonsLayout.setAlignItems(FlexComponent.Alignment.CENTER);
+
+        HorizontalLayout headerLayout = new HorizontalLayout(clientDetailsLayout, buttonsLayout);
         headerLayout.setWidthFull();
         headerLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
         headerLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         headerLayout.getStyle().set("direction", "rtl");
+
 
         addToNavbar(headerLayout);
     }

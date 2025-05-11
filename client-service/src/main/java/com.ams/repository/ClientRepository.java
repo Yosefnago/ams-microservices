@@ -6,8 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
 import java.util.List;
+import java.util.Optional;
 
 /**
  * {@code ClientRepository} is the JPA repository interface for managing {@link ClientDetails} entities.
@@ -37,7 +37,7 @@ public interface ClientRepository extends JpaRepository<ClientDetails,Long> {
      * @return the matching {@link ClientDetails}, or {@code null} if not found
      */
     ClientDetails findByEmail(String email);
-
+    Optional<ClientDetails> findByClientUsername(String clientUsername);
     /**
      * Checks if a client with the given email already exists in the database.
      *

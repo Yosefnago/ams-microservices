@@ -4,14 +4,18 @@ package com.ams.controller;
 
 import com.ams.commonsecurity.utils.JwtUtil;
 import com.ams.dtos.clientDto.*;
+import com.ams.dtos.loginDto.ClientLoginRequest;
+import com.ams.dtos.loginDto.ClientLoginResponse;
 import com.ams.entity.ClientDetails;
 import com.ams.repository.ClientRepository;
 import com.ams.service.ClientService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -40,6 +44,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/client")
 public class ClientController {
 
+    private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final ClientService clientService;
 
@@ -50,9 +55,10 @@ public class ClientController {
      * @param jwtUtil utility for handling JWT tokens
      */
     @Autowired
-    public ClientController(ClientService clientService, JwtUtil jwtUtil) {
+    public ClientController(ClientService clientService, JwtUtil jwtUtil,PasswordEncoder passwordEncoder) {
         this.clientService = clientService;
         this.jwtUtil = jwtUtil;
+        this.passwordEncoder = passwordEncoder;
     }
 
     /**
@@ -224,5 +230,31 @@ public class ClientController {
         int numOfClients = clientDetailsList.size();
         return ResponseEntity.ok(new LoadNumOfClientsResponse(true, "מספר לקוחות נטענו", numOfClients));
     }
+    @PostMapping("/grant-access")
+    public ResponseEntity<String> grantAccessToClient(
+            @RequestParam String clientId,
+            @RequestParam String clientUsername,
+            @RequestParam String clientPassword,
+            @RequestHeader("Authorization") String token) {
 
+        try {
+            clientService.grantLoginAccess(clientId, clientUsername, clientPassword);
+            return ResponseEntity.ok("עודכנה גישת התחברות ללקוח");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("שגיאה בשרת");
+        }
+    }
+    @PostMapping("/login")
+    public ResponseEntity<ClientLoginResponse> login(@RequestBody ClientLoginRequest request){
+        Optional<ClientDetails> client = clientService.getClientByClientUsername(request.username());
+
+        if (client.isPresent() && passwordEncoder.matches(request.password(),client.get().getClientPassword())){
+            String token = jwtUtil.generateToken(client.get().getClientUsername(),"CLIENT");
+            return ResponseEntity.ok(new ClientLoginResponse(true,"התחברת בהצלחה",token,client.get().getClientId()));
+        }
+        return ResponseEntity
+                .ok(new ClientLoginResponse(false, "לא ניתן להתחבר", "", ""));
+    }
 }

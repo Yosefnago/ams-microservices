@@ -104,6 +104,7 @@ public class JwtGlobalFilter implements GlobalFilter, Ordered {
     private boolean isPublicPath(String path) {
         return path.equals("/auth/login") ||
                 path.equals("/auth/register") ||
+                path.equals("/client/login") ||
                 path.equals("/") ||
                 path.equals("/index") ||
                 path.equals("/index.html") ||

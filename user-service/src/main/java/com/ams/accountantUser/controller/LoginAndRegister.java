@@ -99,7 +99,7 @@ public class LoginAndRegister {
         Optional<AccountantUser> user = accountantUserService.findByUsername(loginRequest.username());
 
         if (user.isPresent() && passwordEncoder.matches(loginRequest.password(), user.get().getPassword())) {
-            String token = jwtUtil.generateToken(user.get().getUsername());
+            String token = jwtUtil.generateToken(user.get().getUsername(), "ACCOUNTANT");
             return ResponseEntity.ok(new LoginResponse(true, "התחברת בהצלחה", token));
         }
 

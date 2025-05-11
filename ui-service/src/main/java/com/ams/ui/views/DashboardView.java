@@ -19,6 +19,7 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import jakarta.annotation.security.RolesAllowed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +48,7 @@ import org.springframework.web.client.RestTemplate;
 
 @Route(value = "dashboard", layout = MainLayout.class)
 @PageTitle("Dashboard")
+@RolesAllowed( "ACCOUNTANT")
 public class DashboardView extends VerticalLayout {
 
     RouterLink link;

@@ -10,6 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * {@code ClientService} encapsulates the core business logic related to managing clients.
@@ -34,17 +35,17 @@ public class ClientService {
 
     private final ClientRepository clientRepository;
     private final JwtUtil jwtUtil;
-
+    private final PasswordEncoder passwordEncoder;
     /**
      * Constructs a new {@code ClientService} with required dependencies.
      *
      * @param clientRepository the repository for data access operations
      * @param jwtUtil utility class for extracting information from JWT tokens
      */
-    public ClientService(@Autowired ClientRepository clientRepository, JwtUtil jwtUtil) {
+    public ClientService(@Autowired ClientRepository clientRepository, JwtUtil jwtUtil,PasswordEncoder passwordEncoder) {
         this.clientRepository = clientRepository;
         this.jwtUtil = jwtUtil;
-
+        this.passwordEncoder = passwordEncoder;
     }
 
     /**
@@ -150,6 +151,9 @@ public class ClientService {
     public boolean existsByAccountNumber(String bankAccountNumber){
         return clientRepository.existsByBankAccountNumber(bankAccountNumber);
     }
+    public Optional<ClientDetails> getClientByClientUsername(String clientUsername){
+        return clientRepository.findByClientUsername(clientUsername);
+    }
     /**
      * Updates an existing client's details with non-null values provided in the request.
      *
@@ -201,5 +205,15 @@ public class ClientService {
         }
 
         clientRepository.save(existing);
+    }
+    public void grantLoginAccess(String clientId, String clientUsername, String clientPassword) {
+        ClientDetails client = clientRepository.findByClientId(clientId);
+        if (client == null) {
+            throw new IllegalArgumentException("לקוח לא נמצא");
+        }
+
+        client.setClientUsername(clientUsername);
+        client.setClientPassword(passwordEncoder.encode(clientPassword));
+        clientRepository.save(client);
     }
 }

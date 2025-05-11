@@ -60,6 +60,10 @@ public class ClientDetails {
     @Column(name = "account_owner_name")
     private String accountOwnerName;
 
+    @Column(name = "client_username",unique = true)
+    private String clientUsername;
 
+    @Column(name = "client_password",unique = true)
+    private String clientPassword;
 
 }

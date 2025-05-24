@@ -155,7 +155,7 @@ public class ClientCaseLayout extends AppLayout implements BeforeEnterObserver {
         buttonsLayout.setAlignItems(FlexComponent.Alignment.CENTER);
 
         if (role.equals("CLIENT")) {
-            backButton.setVisible(false);
+            backButton.setVisible(true);
             backLink.setVisible(false);
             grantAccsess.setVisible(false);
             logout.setVisible(true);

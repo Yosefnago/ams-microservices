@@ -4,16 +4,27 @@ package com.ams.controller;
 
 import com.ams.commonsecurity.utils.JwtUtil;
 import com.ams.dtos.clientDto.*;
+import com.ams.dtos.documentDto.DocumentGrid;
+import com.ams.dtos.documentDto.DocumentUploadRequest;
+import com.ams.dtos.documentDto.DocumentUploadResponse;
+import com.ams.dtos.documentDto.LoadDocumentsResponse;
 import com.ams.dtos.loginDto.ClientLoginRequest;
 import com.ams.dtos.loginDto.ClientLoginResponse;
 import com.ams.entity.ClientDetails;
+import com.ams.entity.Documents;
 import com.ams.repository.ClientRepository;
 import com.ams.service.ClientService;
+import com.ams.service.DocumentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -47,7 +58,7 @@ public class ClientController {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final ClientService clientService;
-
+    private final DocumentService documentService;
     /**
      * Constructs a {@code ClientController} with required dependencies.
      *
@@ -55,12 +66,60 @@ public class ClientController {
      * @param jwtUtil utility for handling JWT tokens
      */
     @Autowired
-    public ClientController(ClientService clientService, JwtUtil jwtUtil,PasswordEncoder passwordEncoder) {
+    public ClientController(ClientService clientService,DocumentService documentService, JwtUtil jwtUtil,PasswordEncoder passwordEncoder) {
         this.clientService = clientService;
+        this.documentService = documentService;
         this.jwtUtil = jwtUtil;
         this.passwordEncoder = passwordEncoder;
     }
 
+    @GetMapping("/load-documents")
+    public ResponseEntity<LoadDocumentsResponse> loadDocuments(@RequestHeader("clientId") String clientId){
+        try {
+            List<DocumentGrid> documentGrids = documentService.getAllDocumentsByClientId(clientId);
+            return ResponseEntity.ok(new LoadDocumentsResponse(true, "מסמכים נטענו", documentGrids));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(new LoadDocumentsResponse(false, "שגיאה: " + e.getMessage(), List.of()));
+        }
+    }
+    @DeleteMapping("/delete-document/{fileName}")
+    public ResponseEntity<Void> deleteDocument(@PathVariable String fileName){
+        documentService.deleteDocumentByDocId(fileName);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<DocumentUploadResponse> uploadDocument(
+            @RequestPart("file") MultipartFile file,
+            @RequestParam("clientId") String clientId,
+            @RequestParam("status") String status,
+            @RequestParam("uploadedAt") String uploadedAtStr){
+
+        try {
+            if (!clientService.existsClientById(clientId)) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body(new DocumentUploadResponse(false, "לקוח לא נמצא"));
+            }
+
+            DocumentUploadRequest request = new DocumentUploadRequest(
+                    file.getOriginalFilename(),
+                    file.getBytes(),
+                    clientId,
+                    status,
+                    LocalDate.parse(uploadedAtStr)
+            );
+
+            documentService.saveDocument(request);
+
+            return ResponseEntity.ok(new DocumentUploadResponse(true, "ההעלאה בוצעה"));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new DocumentUploadResponse(false, "שגיאה בהעלאת קובץ"));
+        }
+
+    }
     /**
      * Creates a new client if the identifiers (tax ID, email, bank account) are valid and unique.
      *
@@ -196,8 +255,6 @@ public class ClientController {
     @GetMapping("/load-clients")
     public ResponseEntity<LoadClientResponse> loadClients(@RequestHeader("X-User-Name") String username) {
 
-
-
         try {
             List<ClientDetails> clientDetailsList = clientService.getAllClientsByaccountantName(username);
 
@@ -226,6 +283,7 @@ public class ClientController {
      */
     @GetMapping("/load-numOfclients")
     public ResponseEntity<LoadNumOfClientsResponse> loadNumOfClients(@RequestHeader("X-User-Name") String username) {
+
         List<ClientDetails> clientDetailsList = clientService.getAllClientsByaccountantName(username);
         int numOfClients = clientDetailsList.size();
         return ResponseEntity.ok(new LoadNumOfClientsResponse(true, "מספר לקוחות נטענו", numOfClients));
@@ -251,7 +309,7 @@ public class ClientController {
         Optional<ClientDetails> client = clientService.getClientByClientUsername(request.username());
 
         if (client.isPresent() && passwordEncoder.matches(request.password(),client.get().getClientPassword())){
-            String token = jwtUtil.generateToken(client.get().getClientUsername(),"CLIENT");
+            String token = jwtUtil.generateToken(client.get().getClientUsername(),"CLIENT",client.get().getClientId());
             return ResponseEntity.ok(new ClientLoginResponse(true,"התחברת בהצלחה",token,client.get().getClientId()));
         }
         return ResponseEntity

@@ -426,7 +426,6 @@ public class ClientsView extends VerticalLayout implements BeforeEnterObserver {
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-            String encodedName = URLEncoder.encode(clientIdSelected, StandardCharsets.UTF_8);
             String url = "http://localhost:8080/client/delete/" + clientIdSelected;
 
             ResponseEntity<Void> response = restTemplate.exchange(
@@ -446,7 +445,7 @@ public class ClientsView extends VerticalLayout implements BeforeEnterObserver {
 
         } catch (Exception e) {
             e.printStackTrace();
-            Notification.show("שגיאה במחיקה: " + e.getMessage(), 5000, Notification.Position.MIDDLE);
+            Notification.show("שגיאה במחיקה", 5000, Notification.Position.MIDDLE);
         }});
 
         confirmDialog.open();
@@ -473,7 +472,7 @@ public class ClientsView extends VerticalLayout implements BeforeEnterObserver {
 
 
         String username = jwtUtil.extractUsername(token);
-        System.out.println("username: " + username);
+
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
         HttpEntity<String> entity = new HttpEntity<>(headers);

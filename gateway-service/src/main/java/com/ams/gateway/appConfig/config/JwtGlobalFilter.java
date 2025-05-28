@@ -3,10 +3,8 @@ package com.ams.gateway.appConfig.config;
 
 import com.ams.commonsecurity.utils.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
-import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
@@ -71,21 +69,26 @@ public class JwtGlobalFilter implements GlobalFilter, Ordered {
         String path = request.getURI().getPath();
 
 
+
         if (isPublicPath(path)) {
             return chain.filter(exchange);
         }
+
         String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+
             return unauthorized(exchange, "Missing or invalid Authorization header");
         }
 
         String token = authHeader.substring(7);
         if (!jwtUtil.validateToken(token)) {
+
             return unauthorized(exchange, "Invalid JWT token");
         }
 
         String username = jwtUtil.extractUsername(token);
         if (username == null || username.isEmpty()) {
+
             return unauthorized(exchange, "Token does not contain valid username");
         }
 
@@ -137,7 +140,6 @@ public class JwtGlobalFilter implements GlobalFilter, Ordered {
     public int getOrder() {
         return -1;
     }
-
 
 
 }

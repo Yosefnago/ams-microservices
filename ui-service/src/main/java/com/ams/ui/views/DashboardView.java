@@ -100,7 +100,33 @@ public class DashboardView extends VerticalLayout {
                 .set("background-size", "cover")
                 .set("background-position", "center");
 
-        div.getElement().setText("מסמכים לטיפול");
+        String token = (String) VaadinSession.getCurrent().getAttribute("jwt");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<Integer> response = restTemplate.exchange(
+                    "http://localhost:8080/client/loadNumOfDocuments",
+                    HttpMethod.GET,
+                    entity,
+                    Integer.class);
+
+            if (response.hasBody() && response.getBody() != null) {
+                div.getElement().setText("מסמכים לטיפול: " + response.getBody().toString());
+            } else {
+                div.getElement().setText("מסמכים לטיפול: " + 0);
+            }
+
+        } catch (Exception e) {
+            Notification.show(message, 4000, Notification.Position.MIDDLE);
+        }
+
+        div.addClickListener(event -> {
+           UI.getCurrent().navigate(DocumentCareView.class);
+        });
 
         return div;
     }

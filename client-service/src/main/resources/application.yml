@@ -11,7 +11,7 @@ spring:
       ddl-auto: update
     generate-ddl: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-    show-sql: true
+    show-sql: false
 server:
   port: 8083
 

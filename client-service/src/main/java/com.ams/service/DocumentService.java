@@ -1,7 +1,10 @@
 package com.ams.service;
 
+import com.ams.dtos.documentDto.DocumentCareGridDto;
 import com.ams.dtos.documentDto.DocumentGrid;
+import com.ams.dtos.documentDto.DocumentUpdateRequest;
 import com.ams.dtos.documentDto.DocumentUploadRequest;
+import com.ams.entity.ClientDetails;
 import com.ams.entity.Documents;
 import com.ams.repository.DocumentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,16 +17,30 @@ import java.util.List;
 public class DocumentService {
 
     private final DocumentRepository documentRepository;
-
+    private final ClientService clientService;
     @Autowired
-    public DocumentService(DocumentRepository documentRepository) {
+    public DocumentService(DocumentRepository documentRepository,ClientService clientService) {
         this.documentRepository = documentRepository;
+        this.clientService = clientService;
     }
 
     public List<DocumentGrid> getAllDocumentsByClientId(String clientId){
 
         return documentRepository.findAllGridByClientId(clientId);
 
+    }
+    public int getNumOfPendingDocumentsByAccountantName(String accountantName) {
+        List<ClientDetails> clients = clientService.getAllClientsByaccountantName(accountantName);
+
+        if (clients.isEmpty()) {
+            return 0;
+        }
+
+        List<String> clientIds = clients.stream()
+                .map(ClientDetails::getClientId)
+                .toList();
+
+        return documentRepository.countByClientIdInAndStatus(clientIds, "ממתין לטיפול");
     }
     public void saveDocument(DocumentUploadRequest request){
 
@@ -45,4 +62,20 @@ public class DocumentService {
     public void deleteDocumentByDocId(String fileName){
         documentRepository.deleteByDocumentName(fileName);
     }
+    @Transactional(readOnly = true)
+    public Documents getDocumentByName(String filename){
+        return documentRepository.findByDocumentName(filename).orElse(null);
+    }
+    @Transactional
+    public void updateDocStatus(DocumentUpdateRequest request){
+        documentRepository.updateStatus(request.documentName(),request.status(),request.rejectionReason());
+    }
+    public String getRejectedReason(String documentName){
+        return documentRepository.getRejectedReason(documentName);
+    }
+    @Transactional
+    public List<DocumentCareGridDto> getPendingDocumentsCareList(String accountantName) {
+        return documentRepository.findPendingDocumentsCareList(accountantName);
+    }
+
 }

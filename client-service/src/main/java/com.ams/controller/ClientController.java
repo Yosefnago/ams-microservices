@@ -4,10 +4,7 @@ package com.ams.controller;
 
 import com.ams.commonsecurity.utils.JwtUtil;
 import com.ams.dtos.clientDto.*;
-import com.ams.dtos.documentDto.DocumentGrid;
-import com.ams.dtos.documentDto.DocumentUploadRequest;
-import com.ams.dtos.documentDto.DocumentUploadResponse;
-import com.ams.dtos.documentDto.LoadDocumentsResponse;
+import com.ams.dtos.documentDto.*;
 import com.ams.dtos.loginDto.ClientLoginRequest;
 import com.ams.dtos.loginDto.ClientLoginResponse;
 import com.ams.entity.ClientDetails;
@@ -24,7 +21,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -315,4 +311,47 @@ public class ClientController {
         return ResponseEntity
                 .ok(new ClientLoginResponse(false, "לא ניתן להתחבר", "", ""));
     }
+    @GetMapping("/get-document/{documentName}")
+    public ResponseEntity<byte[]> getDocument(@PathVariable String documentName) {
+        Documents document = documentService.getDocumentByName(documentName);
+
+        if (document == null || document.getFileData() == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(document.getFileData());
+    }
+    @GetMapping("/get-document-rejectReason/{documentName}")
+    public ResponseEntity<String> getRejectReason(@PathVariable String documentName) {
+        String reason = documentService.getRejectedReason(documentName);
+
+        return ResponseEntity.ok(reason);
+    }
+
+    @PutMapping("/update-document-status")
+    public ResponseEntity<Void> updateStatus(@RequestBody DocumentUpdateRequest request) {
+        documentService.updateDocStatus(request);
+        return ResponseEntity.ok().build();
+    }
+    @GetMapping("/loadNumOfDocuments")
+    public ResponseEntity<Integer> loadNumOfDocs(@RequestHeader("X-User-Name") String username) {
+
+        int count = documentService.getNumOfPendingDocumentsByAccountantName(username);
+
+        return ResponseEntity.ok(count);
+    }
+    @GetMapping("/loadDocumentsCareList")
+    public ResponseEntity<LoadDocumentsCareGridResponse> loadDocumentsCareList(@RequestHeader("X-User-Name") String username) {
+        try {
+            List<DocumentCareGridDto> careList = documentService.getPendingDocumentsCareList(username);
+            return ResponseEntity.ok(new LoadDocumentsCareGridResponse(true, "מסמכים נטענו בהצלחה", careList));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new LoadDocumentsCareGridResponse(false, "שגיאה בטעינת מסמכים", List.of()));
+        }
+    }
+
 }
+

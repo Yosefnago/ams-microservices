@@ -11,17 +11,25 @@ import com.ams.ui.layouts.ClientCaseLayout;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.contextmenu.ContextMenu;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Anchor;
+import com.vaadin.flow.component.html.IFrame;
+import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.component.upload.receivers.MultiFileMemoryBuffer;
+import com.vaadin.flow.server.StreamResource;
+import com.vaadin.flow.server.VaadinService;
+import com.vaadin.flow.server.VaadinServletService;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import org.aspectj.weaver.ast.Not;
@@ -34,11 +42,13 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
-
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 @Route(value = ":clientId/documents",layout = ClientCaseLayout.class)
@@ -51,6 +61,7 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
     String clientId;
     private Grid<DocumentGrid> grid = new Grid<>();
     String documentNameSelected;
+    Button viewButton;
 
     @Autowired
     public DocumentsView(RestTemplate restTemplate, JwtUtil jwtUtil) {
@@ -95,7 +106,7 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
                 byte[] fileData = inputStream.readAllBytes();
 
 
-                String status = "PENDING";
+                String status = "ממתין לטיפול";
                 LocalDate date = LocalDate.now();
 
                 upload(uploadedFileName, fileData, clientId, status, date);
@@ -152,7 +163,7 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
         } else {
             Notification.show(response.getBody().message(), 3000, Notification.Position.MIDDLE);
         }
-
+        UI.getCurrent().refreshCurrentRoute(true);
     }
     public Component body() {
         VerticalLayout layout = new VerticalLayout();
@@ -188,13 +199,42 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
         grid.addComponentColumn(client -> {
             HorizontalLayout actions = new HorizontalLayout();
 
-            // Client view icon
-            Button viewButton = new Button(VaadinIcon.EYE.create(), e -> {
+            // Document view
+            viewButton = new Button(VaadinIcon.EYE.create(), e -> {
                 Notification.show("צפייה" );
+                String token = (String)VaadinSession.getCurrent().getAttribute("jwt");
+
+                String role = jwtUtil.extractRole(token);
+                if (role.equals("CLIENT")){
+
+                    ContextMenu contextMenu = new ContextMenu(viewButton);
+
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.setBearerAuth(token);
+                    headers.setContentType(MediaType.APPLICATION_JSON);
+
+                    HttpEntity<Void> entity = new HttpEntity<>(headers);
+                    String url = "http://localhost:8080/client/get-document-rejectReason/" + documentNameSelected;
+
+                    ResponseEntity<String> response = restTemplate.exchange(
+                            url,
+                            HttpMethod.GET,
+                            entity,
+                            String.class
+                    );
+                    contextMenu.setOpenOnClick(true);
+                    contextMenu.removeAll();
+                    contextMenu.add(new Paragraph(response.getBody()));
+
+                }
+                if (role.equals("ACCOUNTANT")) {
+                    viewDocument();
+                }
+
             });
             viewButton.getElement().setProperty("title", "צפייה");
 
-            // edit icon
+            // Delete icon
             Button editButton = new Button(VaadinIcon.TRASH.create(), e -> {
                 deleteDocument(documentNameSelected);
             });
@@ -262,10 +302,110 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
 
             if(response.getStatusCode().is2xxSuccessful()){
                 Notification.show("נמחק בהצלחה");
+                UI.getCurrent().refreshCurrentRoute(true);
             }
 
         }catch (HttpClientErrorException e){
             Notification.show("מחיקה נכשלה." , 3000, Notification.Position.MIDDLE);
+        }
+
+    }
+    private void viewDocument() {
+        Dialog dialog = new Dialog();
+        dialog.setWidth("800px");
+        dialog.setHeight("600px");
+
+        String token = (String) VaadinSession.getCurrent().getAttribute("jwt");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        headers.setAccept(List.of(MediaType.APPLICATION_OCTET_STREAM));
+
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        String url = "http://localhost:8080/client/get-document/" + documentNameSelected;
+
+        try {
+            ResponseEntity<byte[]> response = restTemplate.exchange(url, HttpMethod.GET, entity, byte[].class);
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+
+                StreamResource resource = new StreamResource(
+                        documentNameSelected,
+                        () -> new ByteArrayInputStream(response.getBody())
+                );
+                resource.setContentType("application/pdf");
+
+                String resourceUrl = VaadinSession.getCurrent()
+                        .getResourceRegistry()
+                        .registerResource(resource)
+                        .getResourceUri().toString();
+
+                IFrame iframe = new IFrame();
+                iframe.setSrc(resourceUrl);
+                iframe.setSizeFull();
+
+                Button approveButton = new Button("אשר", e -> {
+                    updateDocumentStatus("אושר", null);
+                    dialog.close();
+                    UI.getCurrent().refreshCurrentRoute(true);
+                });
+
+                TextArea rejectReason = new TextArea("סיבת דחייה");
+                rejectReason.setPlaceholder("נא לציין מדוע נדחה");
+                rejectReason.setWidthFull();
+
+                Button rejectButton = new Button("דחה", e -> {
+                    updateDocumentStatus("נדחה", rejectReason.getValue());
+                    dialog.close();
+                    UI.getCurrent().refreshCurrentRoute(true);
+                });
+
+                HorizontalLayout actions = new HorizontalLayout(approveButton, rejectButton);
+                actions.setWidthFull();
+                actions.setJustifyContentMode(JustifyContentMode.END);
+
+                dialog.add(iframe, rejectReason, actions);
+            } else {
+                Notification.show("שגיאה בהבאת המסמך", 3000, Notification.Position.MIDDLE);
+            }
+        } catch (Exception e) {
+            Notification.show("שגיאה בטעינה", 3000, Notification.Position.MIDDLE);
+        }
+
+        dialog.setModal(true);
+        dialog.setDraggable(true);
+        dialog.setResizable(true);
+        dialog.open();
+    }
+    private void updateDocumentStatus(String newStatus, String reason) {
+        String token = (String) VaadinSession.getCurrent().getAttribute("jwt");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(token);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("documentName", documentNameSelected);
+        body.put("status", newStatus);
+        if (reason != null) body.put("rejectionReason", reason);
+
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+
+        try {
+            ResponseEntity<Void> response = restTemplate.exchange(
+                    "http://localhost:8080/client/update-document-status",
+                    HttpMethod.PUT,
+                    entity,
+                    Void.class
+            );
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                Notification.show("המסמך עודכן", 3000, Notification.Position.MIDDLE);
+            } else {
+                Notification.show("עדכון נכשל", 3000, Notification.Position.MIDDLE);
+            }
+        } catch (Exception e) {
+            Notification.show("שגיאה בעדכון", 3000, Notification.Position.MIDDLE);
         }
     }
 }

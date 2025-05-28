@@ -10,6 +10,9 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -19,6 +22,8 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.spring.VaadinApplicationConfiguration;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
@@ -99,12 +104,25 @@ public class ClientCaseView extends VerticalLayout implements BeforeEnterObserve
 
         VerticalLayout mainLayout = new VerticalLayout();
         mainLayout.setAlignItems(Alignment.END);
+
         HorizontalLayout horizontalLayout = new HorizontalLayout();
 
         Div documentsDiv = new Div("מסמכים");
+        documentsDiv.getStyle().setCursor("pointer");
         documentsDiv.getStyle().set("background-color", "#f0f0f0");
         documentsDiv.getStyle().setHeight("100px");
         documentsDiv.getStyle().setWidth("200px");
+        documentsDiv.getStyle().set("display", "flex");
+        documentsDiv.getStyle().set("flex-direction", "row-reverse");
+        documentsDiv.getStyle().set("align-items", "center");
+        documentsDiv.getStyle().set("justify-content", "center");
+        documentsDiv.getStyle().set("direction", "rtl");
+        documentsDiv.addClassNames(LumoUtility.BoxShadow.SMALL);
+        documentsDiv.addClassNames(LumoUtility.TextColor.PRIMARY);
+        documentsDiv.addClassNames(LumoUtility.FontSize.LARGE);
+        documentsDiv.addClassNames(LumoUtility.FontWeight.SEMIBOLD);
+        documentsDiv.addClassNames(LumoUtility.BorderRadius.MEDIUM);
+
         documentsDiv.addClickListener(e -> {
            UI.getCurrent().navigate(clientId + "/documents");
         });
@@ -113,21 +131,109 @@ public class ClientCaseView extends VerticalLayout implements BeforeEnterObserve
         invoicesDiv.getStyle().set("background-color", "#f0f0f0");
         invoicesDiv.getStyle().setHeight("100px");
         invoicesDiv.getStyle().setWidth("200px");
+        invoicesDiv.getStyle().set("display", "flex");
+        invoicesDiv.getStyle().set("flex-direction", "row-reverse");
+        invoicesDiv.getStyle().set("align-items", "center");
+        invoicesDiv.getStyle().set("justify-content", "center");
+        invoicesDiv.getStyle().set("direction", "rtl");
+        invoicesDiv.addClassNames(LumoUtility.BoxShadow.SMALL);
+        invoicesDiv.addClassNames(LumoUtility.TextColor.PRIMARY);
+        invoicesDiv.addClassNames(LumoUtility.FontSize.LARGE);
+        invoicesDiv.addClassNames(LumoUtility.FontWeight.SEMIBOLD);
+        invoicesDiv.addClassNames(LumoUtility.BorderRadius.MEDIUM);
+
 
         Div reportsDiv = new Div("דיווחים");
         reportsDiv.getStyle().set("background-color", "#f0f0f0");
         reportsDiv.getStyle().setHeight("100px");
         reportsDiv.getStyle().setWidth("200px");
+        reportsDiv.getStyle().set("display", "flex");
+        reportsDiv.getStyle().set("flex-direction", "row-reverse");
+        reportsDiv.getStyle().set("align-items", "center");
+        reportsDiv.getStyle().set("justify-content", "center");
+        reportsDiv.getStyle().set("direction", "rtl");
+        reportsDiv.addClassNames(LumoUtility.BoxShadow.SMALL);
+        reportsDiv.addClassNames(LumoUtility.TextColor.PRIMARY);
+        reportsDiv.addClassNames(LumoUtility.FontSize.LARGE);
+        reportsDiv.addClassNames(LumoUtility.FontWeight.SEMIBOLD);
+        reportsDiv.addClassNames(LumoUtility.BorderRadius.MEDIUM);
+
 
         Div duchutDiv = new Div("דוחות");
         duchutDiv.getStyle().set("background-color", "#f0f0f0");
         duchutDiv.getStyle().setHeight("100px");
         duchutDiv.getStyle().setWidth("200px");
-        
+        duchutDiv.getStyle().set("display", "flex");
+        duchutDiv.getStyle().set("flex-direction", "row-reverse");
+        duchutDiv.getStyle().set("align-items", "center");
+        duchutDiv.getStyle().set("justify-content", "center");
+        duchutDiv.getStyle().set("direction", "rtl");
+        duchutDiv.addClassNames(LumoUtility.BoxShadow.SMALL);
+        duchutDiv.addClassNames(LumoUtility.TextColor.PRIMARY);
+        duchutDiv.addClassNames(LumoUtility.FontSize.LARGE);
+        duchutDiv.addClassNames(LumoUtility.FontWeight.SEMIBOLD);
+        duchutDiv.addClassNames(LumoUtility.BorderRadius.MEDIUM);
 
         horizontalLayout.add(duchutDiv,reportsDiv,invoicesDiv,documentsDiv);
 
-        mainLayout.add(horizontalLayout);
+        Div incomes = new Div();
+        incomes.getStyle().setWidth("415px");
+        incomes.getStyle().setHeight("200px");
+        incomes.getStyle().set("background-color", "#f0f0f0");
+        incomes.getStyle().set("display", "flex");
+        incomes.getStyle().set("flex-direction", "row-reverse");
+        incomes.getStyle().set("align-items", "top");
+        incomes.getStyle().set("justify-content", "flex-end");
+        incomes.getStyle().set("direction", "rtl");
+
+        incomes.addClassNames(LumoUtility.BoxShadow.SMALL);
+
+        Span text = new Span("הכנסות ");
+        text.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.TextColor.SUCCESS);
+        text.getStyle().set("margin-right", "10px");
+        text.addClassNames(LumoUtility.FontSize.LARGE);
+
+
+        incomes.addClassNames(LumoUtility.Gap.MEDIUM);
+        incomes.addClassNames(LumoUtility.Background.SUCCESS_10);
+        incomes.addClassNames(LumoUtility.BorderRadius.MEDIUM);
+
+        incomes.add( text);
+
+
+        Div outComes = new Div();
+        outComes.getStyle().setWidth("415px");
+        outComes.getStyle().setHeight("200px");
+        outComes.getStyle().set("background-color", "#f0f0f0");
+        outComes.getStyle().set("display", "flex");
+        outComes.getStyle().set("flex-direction", "row-reverse");
+        outComes.getStyle().set("align-items", "top");
+        outComes.getStyle().set("justify-content", "flex-end");
+        outComes.getStyle().set("direction", "rtl");
+
+        Span text2 = new Span("הוצאות ");
+        text2.addClassNames(LumoUtility.FontWeight.BOLD);
+        text2.getStyle().set("margin-right", "10px");
+        text2.addClassNames(LumoUtility.FontSize.LARGE);
+        text2.addClassNames(LumoUtility.TextColor.ERROR);
+
+        outComes.addClassNames(LumoUtility.Gap.MEDIUM);
+        outComes.addClassNames(LumoUtility.BorderRadius.MEDIUM);
+        outComes.addClassNames(LumoUtility.BoxShadow.SMALL);
+
+
+        outComes.add(text2);
+
+        HorizontalLayout horizontalLayout1 = new HorizontalLayout();
+        VerticalLayout layout = new VerticalLayout();
+        layout.setSizeFull();
+        layout.setDefaultHorizontalComponentAlignment(Alignment.END);
+
+        horizontalLayout1.add(outComes,incomes);
+
+        layout.add(horizontalLayout1);
+
+        mainLayout.add(horizontalLayout,horizontalLayout1);
         return mainLayout;
     }
 

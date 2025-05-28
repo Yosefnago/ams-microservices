@@ -33,5 +33,7 @@ public class Documents {
     @Column(name = "uploadedAt")
     public LocalDate uploadedAt;
 
+    @Column(name = "reason")
+    public String reason;
 
 }

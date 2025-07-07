@@ -29,7 +29,14 @@ import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+/**
+ * DocumentCareView is a Vaadin view intended for accountants to review and process
+ * uploaded documents by clients. The view includes a grid to list documents and
+ * allows actions such as viewing, approving, or rejecting documents.
+ *
+ * This view is accessible only by users with the "ACCOUNTANT" role.
+ * It is mapped to the route "document-care".
+ */
 @Route(value = "document-care", layout = MainLayout.class)
 @RolesAllowed("ACCOUNTANT")
 @PageTitle("Documents")
@@ -48,6 +55,10 @@ public class DocumentCareView extends VerticalLayout implements BeforeEnterObser
         setSizeFull();
         gridContent();
     }
+    /**
+     * Initializes and configures the document grid with columns and actions.
+     * Adds selection and view logic for document review.
+     */
     private void gridContent(){
 
         grid.addColumn(DocumentCareGridDto::bussName).setHeader("שם לקוח");
@@ -87,6 +98,12 @@ public class DocumentCareView extends VerticalLayout implements BeforeEnterObser
 
         add(grid);
     }
+    /**
+     * Displays a dialog with a preview of the selected document (as PDF) and
+     * provides approve/reject actions.
+     *
+     * Only accessible to users with the ACCOUNTANT role.
+     */
     private void viewDocument() {
         Dialog dialog = new Dialog();
         dialog.setWidth("800px");
@@ -99,7 +116,7 @@ public class DocumentCareView extends VerticalLayout implements BeforeEnterObser
         headers.setAccept(List.of(MediaType.APPLICATION_OCTET_STREAM));
 
         HttpEntity<Void> entity = new HttpEntity<>(headers);
-        String url = "http://localhost:8080/client/get-document/" + documentNameSelected;
+        String url = "http://localhost:8080/document/get-document/" + documentNameSelected;
 
         try {
             ResponseEntity<byte[]> response = restTemplate.exchange(url, HttpMethod.GET, entity, byte[].class);
@@ -157,6 +174,13 @@ public class DocumentCareView extends VerticalLayout implements BeforeEnterObser
 
 
     }
+    /**
+     * Sends an update request to the backend to change the status of the selected document.
+     * Can be used to approve or reject the document.
+     *
+     * @param newStatus the new status to set ("אושר" / "נדחה")
+     * @param reason    optional reason for rejection
+     */
     private void updateDocumentStatus(String newStatus, String reason) {
         String token = (String) VaadinSession.getCurrent().getAttribute("jwt");
 
@@ -173,7 +197,7 @@ public class DocumentCareView extends VerticalLayout implements BeforeEnterObser
 
         try {
             ResponseEntity<Void> response = restTemplate.exchange(
-                    "http://localhost:8080/client/update-document-status",
+                    "http://localhost:8080/document/update-document-status",
                     HttpMethod.PUT,
                     entity,
                     Void.class
@@ -188,6 +212,12 @@ public class DocumentCareView extends VerticalLayout implements BeforeEnterObser
             Notification.show("שגיאה בעדכון", 3000, Notification.Position.MIDDLE);
         }
     }
+    /**
+     * Executes before navigating to the view. It verifies token presence and
+     * fetches the list of documents that require accountant care.
+     *
+     * @param event the navigation event
+     */
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         String token = (String) VaadinSession.getCurrent().getAttribute("jwt");
@@ -203,7 +233,7 @@ public class DocumentCareView extends VerticalLayout implements BeforeEnterObser
 
         try {
             ResponseEntity<LoadDocumentsCareGridResponse> response = restTemplate.exchange(
-                    "http://localhost:8080/client/loadDocumentsCareList",
+                    "http://localhost:8080/document/loadDocumentsCareList",
                     HttpMethod.GET,
                     entity,
                     LoadDocumentsCareGridResponse.class
@@ -220,4 +250,5 @@ public class DocumentCareView extends VerticalLayout implements BeforeEnterObser
             Notification.show("שגיאה בטעינת מסמכים", 3000, Notification.Position.MIDDLE);
         }
     }
+
 }

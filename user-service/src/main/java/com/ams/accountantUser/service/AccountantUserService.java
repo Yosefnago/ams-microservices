@@ -56,6 +56,7 @@ public class AccountantUserService  {
         accountantUser.setPassword(passwordEncoder.encode(request.password()));
         accountantUser.setPhone(request.phoneNumber());
         accountantUser.setEmail(request.email());
+        accountantUser.setRole("ACCOUNTANT");
 
         accountantUserRepository.save(accountantUser);
     }

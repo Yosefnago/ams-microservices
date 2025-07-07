@@ -4,6 +4,7 @@ package com.ams.accountantUser.controller;
 import com.ams.accountantUser.entity.AccountantUser;
 import com.ams.accountantUser.reposiroty.AccountantUserRepository;
 import com.ams.accountantUser.service.AccountantUserService;
+import com.ams.accountantUser.service.CustomUserDetailsService;
 import com.ams.commonsecurity.utils.JwtUtil;
 import com.ams.dtos.loginDto.LoginRequest;
 import com.ams.dtos.loginDto.LoginResponse;
@@ -12,6 +13,8 @@ import com.ams.dtos.registerDto.RegisterResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -43,6 +46,7 @@ import java.util.Optional;
 @RequestMapping("/auth")
 public class LoginAndRegister {
 
+    private final CustomUserDetailsService customUserDetailsService;
     private final JwtUtil jwtUtil;
     private final AccountantUserService accountantUserService;
     private final PasswordEncoder passwordEncoder;
@@ -55,10 +59,15 @@ public class LoginAndRegister {
      * @param jwtUtil               utility for generating and parsing JWT tokens
      */
     @Autowired
-    public LoginAndRegister(AccountantUserService accountantUserService,PasswordEncoder passwordEncoder,JwtUtil jwtUtil){
+    public LoginAndRegister(AccountantUserService accountantUserService,
+                            PasswordEncoder passwordEncoder,
+                            JwtUtil jwtUtil,
+                            CustomUserDetailsService customUserDetailsService) {
         this.passwordEncoder = passwordEncoder;
         this.accountantUserService = accountantUserService;
         this.jwtUtil = jwtUtil;
+        this.customUserDetailsService = customUserDetailsService;
+
     }
     /**
      * Endpoint for registering a new user.
@@ -96,11 +105,19 @@ public class LoginAndRegister {
      */
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
-        Optional<AccountantUser> user = accountantUserService.findByUsername(loginRequest.username());
 
-        if (user.isPresent() && passwordEncoder.matches(loginRequest.password(), user.get().getPassword())) {
-            String token = jwtUtil.generateToken(user.get().getUsername(), "ACCOUNTANT", String.valueOf(user.get().getId()));
+        UserDetails user = customUserDetailsService.loadUserByUsername(loginRequest.username());
+        Optional<AccountantUser> accountantUser = accountantUserService.findByUsername(loginRequest.username());
+
+
+        if (accountantUser.isPresent() &&
+        accountantUser.get().getUsername().equals(user.getUsername()) &&
+
+        passwordEncoder.matches(loginRequest.password(), user.getPassword())) {
+
+            String token = jwtUtil.generateToken(user.getUsername(),"ACCOUNTANT", String.valueOf(accountantUser.get().getId()));
             return ResponseEntity.ok(new LoginResponse(true, "התחברת בהצלחה", token));
+
         }
 
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

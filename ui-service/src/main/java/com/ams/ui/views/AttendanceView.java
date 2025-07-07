@@ -35,7 +35,6 @@ import com.vaadin.flow.router.Route;
 @PageTitle("Attendance")
 public class AttendanceView extends VerticalLayout {
 
-    private String user;
 
     /**
      * Constructs the {@code AttendanceView} and initializes its layout configuration.

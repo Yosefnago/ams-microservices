@@ -4,6 +4,7 @@ package com.ams.ui.views;
 
 import com.ams.dtos.clientDto.LoadClientCaseDetailsRequest;
 import com.ams.dtos.clientDto.UpdateClientResponse;
+import com.ams.dtos.invoiceDto.InvoiceOutComeM;
 import com.ams.ui.layouts.ClientCaseLayout;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
@@ -11,8 +12,6 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.icon.Icon;
-import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -22,11 +21,13 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.spring.VaadinApplicationConfiguration;
+import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
+
+import java.math.BigDecimal;
 import java.util.List;
 
 
@@ -38,7 +39,7 @@ import java.util.List;
  * <p><b>Key Features:</b></p>
  * <ul>
  *     <li>Loads client data from the backend using the provided {@code clientId} parameter</li>
- *     <li>Displays interactive components like update form, documents, invoices, reports, and quick actions</li>
+ *     <li>Displays interactive components like an update form, documents, invoices, reports, and quick actions</li>
  *     <li>Supports secure updates via JWT-authenticated HTTP requests</li>
  * </ul>
  *
@@ -70,6 +71,7 @@ public class ClientCaseView extends VerticalLayout implements BeforeEnterObserve
     VerticalLayout contentLayout;
     Button updateButton,saveButton;
     String msg;
+    Div outComes;
     /**
      * Default constructor. Initializes layout settings for the view.
      */
@@ -80,13 +82,10 @@ public class ClientCaseView extends VerticalLayout implements BeforeEnterObserve
         setPadding(false);
         setSpacing(false);
 
-
-
         contentLayout = new VerticalLayout();
         contentLayout.setSizeFull();
         contentLayout.getStyle().set("background-color", "white");
         contentLayout.add(mainLayout());
-
 
         HorizontalLayout mainLayout = new HorizontalLayout();
 
@@ -123,14 +122,13 @@ public class ClientCaseView extends VerticalLayout implements BeforeEnterObserve
         documentsDiv.addClassNames(LumoUtility.FontWeight.SEMIBOLD);
         documentsDiv.addClassNames(LumoUtility.BorderRadius.MEDIUM);
 
-        documentsDiv.addClickListener(e -> {
-           UI.getCurrent().navigate(clientId + "/documents");
-        });
+        documentsDiv.addClickListener(e -> UI.getCurrent().navigate(clientId + "/documents"));
 
         Div invoicesDiv = new Div("חשבוניות");
         invoicesDiv.getStyle().set("background-color", "#f0f0f0");
         invoicesDiv.getStyle().setHeight("100px");
         invoicesDiv.getStyle().setWidth("200px");
+        invoicesDiv.getStyle().setCursor("pointer");
         invoicesDiv.getStyle().set("display", "flex");
         invoicesDiv.getStyle().set("flex-direction", "row-reverse");
         invoicesDiv.getStyle().set("align-items", "center");
@@ -141,6 +139,7 @@ public class ClientCaseView extends VerticalLayout implements BeforeEnterObserve
         invoicesDiv.addClassNames(LumoUtility.FontSize.LARGE);
         invoicesDiv.addClassNames(LumoUtility.FontWeight.SEMIBOLD);
         invoicesDiv.addClassNames(LumoUtility.BorderRadius.MEDIUM);
+        invoicesDiv.addClickListener(e -> UI.getCurrent().navigate(clientId + "/invoices"));
 
 
         Div reportsDiv = new Div("דיווחים");
@@ -201,25 +200,35 @@ public class ClientCaseView extends VerticalLayout implements BeforeEnterObserve
         incomes.add( text);
 
 
-        Div outComes = new Div();
-        outComes.getStyle().setWidth("415px");
-        outComes.getStyle().setHeight("200px");
-        outComes.getStyle().set("background-color", "#f0f0f0");
-        outComes.getStyle().set("display", "flex");
-        outComes.getStyle().set("flex-direction", "row-reverse");
-        outComes.getStyle().set("align-items", "top");
-        outComes.getStyle().set("justify-content", "flex-end");
-        outComes.getStyle().set("direction", "rtl");
+        outComes = new Div();
+        outComes.getStyle()
+                .setWidth("415px")
+                .setHeight("200px")
+                .set("background-color", "#f0f0f0")
+                .set("position", "relative")
+                .set("direction", "rtl")
+                .set("overflow", "hidden");
+
+        outComes.addClassNames(
+                LumoUtility.BoxShadow.SMALL,
+                LumoUtility.Gap.MEDIUM,
+                LumoUtility.BorderRadius.MEDIUM
+        );
+
 
         Span text2 = new Span("הוצאות ");
-        text2.addClassNames(LumoUtility.FontWeight.BOLD);
-        text2.getStyle().set("margin-right", "10px");
-        text2.addClassNames(LumoUtility.FontSize.LARGE);
-        text2.addClassNames(LumoUtility.TextColor.ERROR);
+        text2.addClassNames(
+                LumoUtility.FontWeight.BOLD,
+                LumoUtility.FontSize.LARGE,
+                LumoUtility.TextColor.ERROR
+        );
+        text2.getStyle()
+                .set("margin", "10px")
+                .set("position", "absolute")
+                .set("top", "0")
+                .set("right", "0");
 
-        outComes.addClassNames(LumoUtility.Gap.MEDIUM);
-        outComes.addClassNames(LumoUtility.BorderRadius.MEDIUM);
-        outComes.addClassNames(LumoUtility.BoxShadow.SMALL);
+
 
 
         outComes.add(text2);
@@ -280,7 +289,7 @@ public class ClientCaseView extends VerticalLayout implements BeforeEnterObserve
         );
         blockFields();
 
-        String token = (String) getUI().get().getSession().getAttribute("jwt");
+        String token = (String) VaadinSession.getCurrent().getSession().getAttribute("jwt");
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
         HttpEntity<String> entity = new HttpEntity<>(headers);
@@ -291,16 +300,16 @@ public class ClientCaseView extends VerticalLayout implements BeforeEnterObserve
                             HttpMethod.GET, entity, LoadClientCaseDetailsRequest.class);
 
             if (requestEntity.getStatusCode().is2xxSuccessful() && requestEntity.getBody() != null) {
-                businessNameFiled.setValue(requestEntity.getBody().businessName().toString());
-                clientIdFiled.setValue(requestEntity.getBody().clientId().toString());
-                emailFiled.setValue(requestEntity.getBody().email().toString());
-                phoneFiled.setValue(requestEntity.getBody().phone().toString());
-                addressFiled.setValue(requestEntity.getBody().address().toString());
-                zipCodeFiled.setValue(requestEntity.getBody().zip().toString());
-                businessTypeFiled.setValue(requestEntity.getBody().businessType().toString());
-                bankNameFiled.setValue(requestEntity.getBody().bankName().toString());
-                bankBranchFiled.setValue(requestEntity.getBody().bankBranch().toString());
-                bankAccountNumberFiled.setValue(requestEntity.getBody().bankAccountNumber().toString());
+                businessNameFiled.setValue(requestEntity.getBody().businessName());
+                clientIdFiled.setValue(requestEntity.getBody().clientId());
+                emailFiled.setValue(requestEntity.getBody().email());
+                phoneFiled.setValue(requestEntity.getBody().phone());
+                addressFiled.setValue(requestEntity.getBody().address());
+                zipCodeFiled.setValue(requestEntity.getBody().zip());
+                businessTypeFiled.setValue(requestEntity.getBody().businessType());
+                bankNameFiled.setValue(requestEntity.getBody().bankName());
+                bankBranchFiled.setValue(requestEntity.getBody().bankBranch());
+                bankAccountNumberFiled.setValue(requestEntity.getBody().bankAccountNumber());
             } else {
                 Notification.show("לקוח לא נמצא", 3000, Notification.Position.MIDDLE);
             }
@@ -355,32 +364,34 @@ public class ClientCaseView extends VerticalLayout implements BeforeEnterObserve
 
         HttpEntity<LoadClientCaseDetailsRequest> entity = new HttpEntity<>(request, headers);
 
+        ResponseEntity<UpdateClientResponse> response = restTemplate.exchange(
+                "http://localhost:8080/client/update",
+                HttpMethod.PUT,
+                entity,
+                UpdateClientResponse.class
+        );
         try {
-            ResponseEntity<UpdateClientResponse> response = restTemplate.exchange(
-                    "http://localhost:8080/client/update",
-                    HttpMethod.PUT,
-                    entity,
-                    UpdateClientResponse.class
-            );
-            msg = response.getBody().message();
+
             if (response.getStatusCode().is2xxSuccessful()) {
-                Notification.show(msg, 3000, Notification.Position.MIDDLE);
+                Notification.show(response.getBody().message(), 3000, Notification.Position.MIDDLE);
                 saveButton.setVisible(false);
             } else {
-                Notification.show(msg, 3000, Notification.Position.MIDDLE);
+                Notification.show(response.getBody().message(), 3000, Notification.Position.MIDDLE);
             }
         } catch (Exception e) {
-            Notification.show(msg, 3000, Notification.Position.MIDDLE);
+            Notification.show(response.getBody().message(), 3000, Notification.Position.MIDDLE);
         }
     }
     /**
-     * Enables or disables editing for all text fields based on current read-only state.
+     * Enables or disables editing for all text fields based on the current read-only state.
      */
     private void blockFields() {
         boolean shouldUnlock = allFields.get(0).isReadOnly();
 
         allFields.forEach(field -> field.setReadOnly(!shouldUnlock));
     }
+
+
     /**
      * Triggered before navigation into this view.
      * Extracts the {@code clientId} from the route parameters and stores it for later use.
@@ -390,5 +401,49 @@ public class ClientCaseView extends VerticalLayout implements BeforeEnterObserve
     public void beforeEnter(BeforeEnterEvent event) {
         clientId = event.getRouteParameters().get("clientId").orElse("לא ידוע");
 
+        fetchOutcomesFromBackend();
+    }
+    private void fetchOutcomesFromBackend() {
+        Span outs = new Span();
+        outs.addClassNames(
+                LumoUtility.FontWeight.BOLD,
+                LumoUtility.TextColor.ERROR,
+                LumoUtility.FontSize.XXLARGE
+        );
+        outs.getStyle()
+                .set("margin", "10px")
+                .set("position", "absolute")
+                .set("bottom", "0")
+                .set("left", "0");
+
+        String token = (String) VaadinSession.getCurrent().getAttribute("jwt");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        String url = "http://localhost:8080/invoice/get-all-outcomes?clientId=" + clientId;
+
+        try {
+            ResponseEntity<InvoiceOutComeM> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    InvoiceOutComeM.class
+            );
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                InvoiceOutComeM outcome = response.getBody();
+                outs.setText("₪ " + outcome.price().toString());
+            } else {
+                outs.setText("");
+            }
+
+        } catch (Exception e) {
+            outs.setText("שגיאה בעת טעינת סך ההוצאות");
+        }
+
+        outComes.add(outs);
     }
 }

@@ -50,7 +50,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
+/**
+ * DocumentsView is responsible for displaying,
+ * uploading, deleting, viewing, and updating the status of documents
+ * associated with a specific client.
+ *
+ * It handles both client-side and accountant-side interactions with documents.
+ *
+ * This view is mapped to the route ":clientId/documents".
+ */
 @Route(value = ":clientId/documents",layout = ClientCaseLayout.class)
 public class DocumentsView extends VerticalLayout implements BeforeEnterObserver {
 
@@ -81,7 +89,11 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
 
         return layout;
     }
-
+    /**
+     * Opens a dialog that allows the user to upload a document.
+     *
+     * @return the upload dialog component
+     */
     private Component uploadDialog(){
 
         Dialog dialog = new Dialog();
@@ -125,6 +137,15 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
         dialog.setOpened(true);
         return dialog;
     }
+    /**
+     * Sends a multipart upload request to the backend with the document data.
+     *
+     * @param fileName    the name of the file
+     * @param fileContent the file content in byte array
+     * @param clientId    the client ID
+     * @param status      the initial status of the document
+     * @param date        the upload date
+     */
     private void upload(String fileName, byte[] fileContent, String clientId,String status,LocalDate date){
 
 
@@ -152,7 +173,7 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
         ResponseEntity<DocumentUploadResponse> response = restTemplate.exchange(
-                "http://localhost:8080/client/upload",
+                "http://localhost:8080/document/upload",
                 HttpMethod.POST,
                 requestEntity,
                 DocumentUploadResponse.class
@@ -165,6 +186,11 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
         }
         UI.getCurrent().refreshCurrentRoute(true);
     }
+    /**
+     * Constructs the main UI layout including the upload button and document grid.
+     *
+     * @return the layout component
+     */
     public Component body() {
         VerticalLayout layout = new VerticalLayout();
         layout.setSizeFull();
@@ -214,7 +240,7 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
                     headers.setContentType(MediaType.APPLICATION_JSON);
 
                     HttpEntity<Void> entity = new HttpEntity<>(headers);
-                    String url = "http://localhost:8080/client/get-document-rejectReason/" + documentNameSelected;
+                    String url = "http://localhost:8080/document/get-document-rejectReason/" + documentNameSelected;
 
                     ResponseEntity<String> response = restTemplate.exchange(
                             url,
@@ -257,7 +283,11 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
 
         return layout;
     }
-
+    /**
+     * Triggered before entering the view. Loads the documents for the client.
+     *
+     * @param event the navigation event
+     */
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         clientId = event.getRouteParameters().get("clientId").orElse("");
@@ -272,7 +302,7 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
 
         try {
             ResponseEntity<LoadDocumentsResponse> response = restTemplate.exchange(
-                    "http://localhost:8080/client/load-documents",
+                    "http://localhost:8080/document/load-documents",
                     HttpMethod.GET, entity, LoadDocumentsResponse.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
@@ -286,6 +316,11 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
 
         }
     }
+    /**
+     * Sends a DELETE request to remove a document by its name.
+     *
+     * @param documentNameSelected the name of the document to delete
+     */
     private void deleteDocument(String documentNameSelected){
         String token = (String)VaadinSession.getCurrent().getAttribute("jwt");
         HttpHeaders headers = new HttpHeaders();
@@ -293,7 +328,7 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        String url = "http://localhost:8080/client/delete-document/" + documentNameSelected;
+        String url = "http://localhost:8080/document/delete-document/" + documentNameSelected;
 
         try {
             ResponseEntity<Void> response = restTemplate.exchange(
@@ -310,6 +345,10 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
         }
 
     }
+    /**
+     * Opens a dialog to display a PDF document in an iframe with action buttons
+     * for approve or reject, available to accountants only.
+     */
     private void viewDocument() {
         Dialog dialog = new Dialog();
         dialog.setWidth("800px");
@@ -322,7 +361,7 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
         headers.setAccept(List.of(MediaType.APPLICATION_OCTET_STREAM));
 
         HttpEntity<Void> entity = new HttpEntity<>(headers);
-        String url = "http://localhost:8080/client/get-document/" + documentNameSelected;
+        String url = "http://localhost:8080/document/get-document/" + documentNameSelected;
 
         try {
             ResponseEntity<byte[]> response = restTemplate.exchange(url, HttpMethod.GET, entity, byte[].class);
@@ -377,6 +416,12 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
         dialog.setResizable(true);
         dialog.open();
     }
+    /**
+     * Sends a PUT request to update the document's status (approved/rejected).
+     *
+     * @param newStatus the new status to update
+     * @param reason    the reason for rejection (nullable)
+     */
     private void updateDocumentStatus(String newStatus, String reason) {
         String token = (String) VaadinSession.getCurrent().getAttribute("jwt");
 
@@ -393,7 +438,7 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
 
         try {
             ResponseEntity<Void> response = restTemplate.exchange(
-                    "http://localhost:8080/client/update-document-status",
+                    "http://localhost:8080/document/update-document-status",
                     HttpMethod.PUT,
                     entity,
                     Void.class

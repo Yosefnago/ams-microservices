@@ -5,13 +5,17 @@ package com.ams.controller;
 import com.ams.commonsecurity.utils.JwtUtil;
 import com.ams.dtos.clientDto.*;
 import com.ams.dtos.documentDto.*;
+import com.ams.dtos.invoiceDto.*;
 import com.ams.dtos.loginDto.ClientLoginRequest;
 import com.ams.dtos.loginDto.ClientLoginResponse;
 import com.ams.entity.ClientDetails;
 import com.ams.entity.Documents;
+import com.ams.entity.Invoice;
 import com.ams.repository.ClientRepository;
 import com.ams.service.ClientService;
 import com.ams.service.DocumentService;
+import com.ams.service.InvoiceOCRExtractor;
+import com.ams.service.InvoiceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -20,8 +24,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -55,6 +63,8 @@ public class ClientController {
     private final JwtUtil jwtUtil;
     private final ClientService clientService;
     private final DocumentService documentService;
+    private final InvoiceService invoiceService;
+    private final InvoiceOCRExtractor invoiceOCRExtractor;
     /**
      * Constructs a {@code ClientController} with required dependencies.
      *
@@ -62,60 +72,22 @@ public class ClientController {
      * @param jwtUtil utility for handling JWT tokens
      */
     @Autowired
-    public ClientController(ClientService clientService,DocumentService documentService, JwtUtil jwtUtil,PasswordEncoder passwordEncoder) {
+    public ClientController(ClientService clientService,
+                            DocumentService documentService,
+                            InvoiceService invoiceService,
+                            InvoiceOCRExtractor invoiceOCRExtractor,
+                            JwtUtil jwtUtil,
+                            PasswordEncoder passwordEncoder) {
+
         this.clientService = clientService;
         this.documentService = documentService;
+        this.invoiceService = invoiceService;
+        this.invoiceOCRExtractor = invoiceOCRExtractor;
         this.jwtUtil = jwtUtil;
         this.passwordEncoder = passwordEncoder;
     }
 
-    @GetMapping("/load-documents")
-    public ResponseEntity<LoadDocumentsResponse> loadDocuments(@RequestHeader("clientId") String clientId){
-        try {
-            List<DocumentGrid> documentGrids = documentService.getAllDocumentsByClientId(clientId);
-            return ResponseEntity.ok(new LoadDocumentsResponse(true, "מסמכים נטענו", documentGrids));
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body(new LoadDocumentsResponse(false, "שגיאה: " + e.getMessage(), List.of()));
-        }
-    }
-    @DeleteMapping("/delete-document/{fileName}")
-    public ResponseEntity<Void> deleteDocument(@PathVariable String fileName){
-        documentService.deleteDocumentByDocId(fileName);
-        return ResponseEntity.ok().build();
-    }
 
-    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<DocumentUploadResponse> uploadDocument(
-            @RequestPart("file") MultipartFile file,
-            @RequestParam("clientId") String clientId,
-            @RequestParam("status") String status,
-            @RequestParam("uploadedAt") String uploadedAtStr){
-
-        try {
-            if (!clientService.existsClientById(clientId)) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(new DocumentUploadResponse(false, "לקוח לא נמצא"));
-            }
-
-            DocumentUploadRequest request = new DocumentUploadRequest(
-                    file.getOriginalFilename(),
-                    file.getBytes(),
-                    clientId,
-                    status,
-                    LocalDate.parse(uploadedAtStr)
-            );
-
-            documentService.saveDocument(request);
-
-            return ResponseEntity.ok(new DocumentUploadResponse(true, "ההעלאה בוצעה"));
-
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new DocumentUploadResponse(false, "שגיאה בהעלאת קובץ"));
-        }
-
-    }
     /**
      * Creates a new client if the identifiers (tax ID, email, bank account) are valid and unique.
      *
@@ -124,6 +96,9 @@ public class ClientController {
      */
     @PostMapping("/create")
     public ResponseEntity<CreateClientResponse> createClient(@RequestBody CreateClientRequest createClientRequest) {
+
+
+
         if (clientService.existsClientById(createClientRequest.tax_id())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new CreateClientResponse(false, "מספר ח.פ/ת.ז לא תקין"));
@@ -138,10 +113,11 @@ public class ClientController {
         try {
             clientService.createNewClient(createClientRequest);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(new CreateClientResponse(true, "ההרשמה בוצעה בהצלחה"));
+                    .body(new CreateClientResponse(true, "לקוח נרשם בהצלחה"));
+
         } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new CreateClientResponse(false,"תקלה בשרת נסה שוב בפעם אחרת"));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new CreateClientResponse(false, e.getMessage()));
         }
     }
 
@@ -167,11 +143,15 @@ public class ClientController {
     public ResponseEntity<LoadClientDetailsCaseResponse> loadClientDetails(@RequestParam String clientId) {
         ClientDetails clientDetails = clientService.getClientsByTaxId(clientId);
 
+        //Client not found
         if (clientDetails == null) {
             return ResponseEntity.ok(
-                    new LoadClientDetailsCaseResponse(false, "לקוח לא נמצא", null, null, null, null, null, null));
+                    new LoadClientDetailsCaseResponse(false,
+                            "לקוח לא נמצא",
+                            null, null, null, null, null, null));
         }
 
+        //Client found, return client info
         return ResponseEntity.ok(
                 new LoadClientDetailsCaseResponse(
                         true,
@@ -193,9 +173,11 @@ public class ClientController {
      */
     @PutMapping("/update")
     public ResponseEntity<UpdateClientResponse> updateClientCaseDetails(@RequestBody LoadClientCaseDetailsRequest request){
+        //Internal server error
         if (request == null){
             return ResponseEntity.badRequest().body(new UpdateClientResponse("תקלה בשרת"));
         }
+
 
         ClientDetails clientDetails = new ClientDetails();
         clientDetails.setClientId(request.clientId());
@@ -220,10 +202,15 @@ public class ClientController {
      */
     @GetMapping("/load-client-case")
     public ResponseEntity<LoadClientCaseDetailsRequest> loadClientCase(@RequestParam String clientId) {
+
         ClientDetails clientDetails = clientService.getClientsByTaxId(clientId);
-        if (clientDetails == null){
+
+        //Client not found
+        if (Objects.isNull(clientDetails)){
             return ResponseEntity.ok(new LoadClientCaseDetailsRequest(null,null,null,null,null,null,null,null,null,null));
         }
+
+        //Client found, return client info
         return ResponseEntity.ok(
                 new LoadClientCaseDetailsRequest(
                         clientDetails.getClientId(),
@@ -250,9 +237,14 @@ public class ClientController {
      */
     @GetMapping("/load-clients")
     public ResponseEntity<LoadClientResponse> loadClients(@RequestHeader("X-User-Name") String username) {
+        List<ClientDetails> clientDetailsList = clientService.getAllClientsByaccountantName(username);
+
+        if (Objects.isNull(clientDetailsList)) {
+            return ResponseEntity.status(HttpStatus.CONTINUE)
+                    .body(new LoadClientResponse(false,"לא נמצאו לקוחות ",Collections.emptyList()));
+        }
 
         try {
-            List<ClientDetails> clientDetailsList = clientService.getAllClientsByaccountantName(username);
 
             List<ClientGridDto> clientGridDtos = clientDetailsList.stream()
                     .map(details -> new ClientGridDto(
@@ -285,72 +277,39 @@ public class ClientController {
         return ResponseEntity.ok(new LoadNumOfClientsResponse(true, "מספר לקוחות נטענו", numOfClients));
     }
     @PostMapping("/grant-access")
-    public ResponseEntity<String> grantAccessToClient(
-            @RequestParam String clientId,
-            @RequestParam String clientUsername,
-            @RequestParam String clientPassword,
-            @RequestHeader("Authorization") String token) {
+    public ResponseEntity<GrantAccessResponse> grantAccessToClient(@RequestBody GrantAccessRequestDto grantAccessRequestDto) {
 
         try {
-            clientService.grantLoginAccess(clientId, clientUsername, clientPassword);
-            return ResponseEntity.ok("עודכנה גישת התחברות ללקוח");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            clientService.grantLoginAccess(
+                    grantAccessRequestDto.clientName(),
+                    grantAccessRequestDto.clientUsername(),
+                    grantAccessRequestDto.clientPassword()
+            );
+            return ResponseEntity.ok(new GrantAccessResponse(true, "עודכנה גישת התחברות ללקוח"));
+
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("שגיאה בשרת");
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(new GrantAccessResponse(false, "לא ניתן לתת גישה ללקוח"));
         }
     }
     @PostMapping("/login")
     public ResponseEntity<ClientLoginResponse> login(@RequestBody ClientLoginRequest request){
+        //Check if client exists
         Optional<ClientDetails> client = clientService.getClientByClientUsername(request.username());
 
-        if (client.isPresent() && passwordEncoder.matches(request.password(),client.get().getClientPassword())){
+        //if client exists, check password,generate token,set role,set id
+        if (Objects.nonNull(client)){
             String token = jwtUtil.generateToken(client.get().getClientUsername(),"CLIENT",client.get().getClientId());
-            return ResponseEntity.ok(new ClientLoginResponse(true,"התחברת בהצלחה",token,client.get().getClientId()));
+
+            if (client.isPresent() && passwordEncoder.matches(request.password(),client.get().getClientPassword())){
+                return ResponseEntity.ok(new ClientLoginResponse(true,"התחברת בהצלחה",token,client.get().getClientId()));
+            }
+
         }
+
         return ResponseEntity
                 .ok(new ClientLoginResponse(false, "לא ניתן להתחבר", "", ""));
-    }
-    @GetMapping("/get-document/{documentName}")
-    public ResponseEntity<byte[]> getDocument(@PathVariable String documentName) {
-        Documents document = documentService.getDocumentByName(documentName);
-
-        if (document == null || document.getFileData() == null) {
-            return ResponseEntity.notFound().build();
-        }
-
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_PDF)
-                .body(document.getFileData());
-    }
-    @GetMapping("/get-document-rejectReason/{documentName}")
-    public ResponseEntity<String> getRejectReason(@PathVariable String documentName) {
-        String reason = documentService.getRejectedReason(documentName);
-
-        return ResponseEntity.ok(reason);
-    }
-
-    @PutMapping("/update-document-status")
-    public ResponseEntity<Void> updateStatus(@RequestBody DocumentUpdateRequest request) {
-        documentService.updateDocStatus(request);
-        return ResponseEntity.ok().build();
-    }
-    @GetMapping("/loadNumOfDocuments")
-    public ResponseEntity<Integer> loadNumOfDocs(@RequestHeader("X-User-Name") String username) {
-
-        int count = documentService.getNumOfPendingDocumentsByAccountantName(username);
-
-        return ResponseEntity.ok(count);
-    }
-    @GetMapping("/loadDocumentsCareList")
-    public ResponseEntity<LoadDocumentsCareGridResponse> loadDocumentsCareList(@RequestHeader("X-User-Name") String username) {
-        try {
-            List<DocumentCareGridDto> careList = documentService.getPendingDocumentsCareList(username);
-            return ResponseEntity.ok(new LoadDocumentsCareGridResponse(true, "מסמכים נטענו בהצלחה", careList));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new LoadDocumentsCareGridResponse(false, "שגיאה בטעינת מסמכים", List.of()));
-        }
     }
 
 }

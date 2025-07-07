@@ -78,4 +78,5 @@ public interface ClientRepository extends JpaRepository<ClientDetails,Long> {
     List<ClientDetails> getAllByAccountantName(@Param("accountantName") String accountantName);
 
 
+    boolean existsByBusinessName(String s);
 }

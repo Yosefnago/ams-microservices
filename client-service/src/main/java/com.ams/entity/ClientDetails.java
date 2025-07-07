@@ -66,4 +66,7 @@ public class ClientDetails {
     @Column(name = "client_password",unique = true)
     private String clientPassword;
 
+    @Column(name = "Role",nullable = false)
+    private String role;
+
 }

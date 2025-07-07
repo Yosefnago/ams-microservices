@@ -6,6 +6,9 @@ import com.ams.dtos.clientDto.CreateClientRequest;
 import com.ams.dtos.clientDto.CreateClientResponse;
 import com.ams.dtos.clientDto.LoadClientResponse;
 import com.ams.ui.layouts.MainLayout;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -31,15 +34,11 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.theme.lumo.LumoUtility;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
 /**
  * {@code ClientsView} is the main UI view for managing client records in the accounting management system.
@@ -58,7 +57,7 @@ import java.nio.charset.StandardCharsets;
  *
  * <p><b>UI Framework:</b> Built with Vaadin components including {@link Grid}, {@link Dialog}, {@link Tabs}, {@link ComboBox}, and {@link Notification}.</p>
  *
- * <p><b>Route:</b> {@code /clients} – Secured via {@link com.ams.ui.layouts.MainLayout}</p>
+ * <p><b>Route:</b> {@code /clients} – Secured via {@link MainLayout}</p>
  *
  * @author Yosef
  */
@@ -80,7 +79,7 @@ public class ClientsView extends VerticalLayout implements BeforeEnterObserver {
     private TextField bankNumberField;
     private ComboBox<String> bankNameField;
     private Button saveButton,cancelButton;
-    private Tab clientDetailsTab,financialDetailsTab,documentDetailsTab;
+    private Tab clientDetailsTab,financialDetailsTab;
     private ComboBox<String> clientTypeComboBox;
     private RestTemplate restTemplate;
     private final Grid<ClientGridDto> grid = new Grid<>();
@@ -105,14 +104,12 @@ public class ClientsView extends VerticalLayout implements BeforeEnterObserver {
      */
     private void clientContent() {
         Button createClientButton = new Button("לקוח חדש");
-        createClientButton.addClickListener(e -> {
-           newClientDialog();
-        });
+        createClientButton.addClickListener(e -> newClientDialog());
+
 
         Button deleteClientButton = new Button("מחק לקוח");
-        deleteClientButton.addClickListener(event ->{
-           deleteClient();
-        });
+        deleteClientButton.addClickListener(event -> deleteClient());
+
 
         createClientButton.addClassNames(LumoUtility.BoxShadow.XSMALL,LumoUtility.Display.INLINE_FLEX,LumoUtility.TextColor.PRIMARY);
         deleteClientButton.getElement().getStyle().set("color", "var(--lumo-error-color)");
@@ -151,9 +148,9 @@ public class ClientsView extends VerticalLayout implements BeforeEnterObserver {
             viewButton.getElement().setProperty("title", "צפייה");
 
             // edit icon
-            Button editButton = new Button(VaadinIcon.EDIT.create(), e -> {
-                Notification.show("עריכה של: " + client.businessName());
-            });
+            Button editButton = new Button(VaadinIcon.EDIT.create(), e ->
+                    Notification.show("עריכה של: " + client.businessName()));
+
             editButton.getElement().setProperty("title", "עריכה");
 
             viewButton.addClassNames(LumoUtility.IconSize.SMALL, LumoUtility.Margin.End.SMALL);
@@ -205,11 +202,8 @@ public class ClientsView extends VerticalLayout implements BeforeEnterObserver {
         tabs.addSelectedChangeListener(event -> {
             dialog.removeAll();
             dialog.add(tabs);
-            if (event.getSelectedTab() == clientDetailsTab) {
-                dialog.add(clientDetailsContent);
-            } else if (event.getSelectedTab() == financialDetailsTab) {
-                dialog.add(financialDetailsContent);
-            }
+
+            dialog.add(event.getSelectedTab() == clientDetailsTab ? clientDetailsContent : financialDetailsContent);
         });
         dialog.getElement().setAttribute("dir", "rtl");
         dialog.open();
@@ -272,12 +266,9 @@ public class ClientsView extends VerticalLayout implements BeforeEnterObserver {
         row4.add(cancelButton,saveButton);
         layout.add(row1,row2,row3,row4);
 
-        cancelButton.addClickListener(event -> {
-            dialog.close();
-        });
-        saveButton.addClickListener(event -> {
-            tabs.setSelectedTab(financialDetailsTab);
-        });
+        cancelButton.addClickListener(event -> dialog.close());
+
+        saveButton.addClickListener(event -> tabs.setSelectedTab(financialDetailsTab));
         saveButton.addClassNames(LumoUtility.TextColor.PRIMARY);
 
         cancelButton.addClassNames(LumoUtility.TextColor.ERROR);
@@ -319,12 +310,16 @@ public class ClientsView extends VerticalLayout implements BeforeEnterObserver {
         saveButton.addClassNames(LumoUtility.TextColor.PRIMARY);
         cancelButton.addClassNames(LumoUtility.TextColor.ERROR);
 
-        cancelButton.addClickListener(event -> {
-            dialog.close();
-        });
+        cancelButton.addClickListener(event -> dialog.close());
         saveButton.addClickListener(event -> {
 
-            newClient();
+            try {
+                newClient();
+
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+
             dialog.close();
             UI.getCurrent().refreshCurrentRoute(true);
         });
@@ -342,7 +337,7 @@ public class ClientsView extends VerticalLayout implements BeforeEnterObserver {
      * Includes validation of fields (email format, phone length, tax ID).
      * Uses JWT token from session for authentication.
      */
-    private void newClient() {
+    private void newClient() throws JsonProcessingException {
 
             String getToken = (String) VaadinSession.getCurrent().getAttribute("jwt");
 
@@ -365,33 +360,32 @@ public class ClientsView extends VerticalLayout implements BeforeEnterObserver {
                     getToken
 
             );
-            Binder<CreateClientRequest> binder = new Binder<>(CreateClientRequest.class);
-            binder.forField(emailField).withValidator(new EmailValidator("אימייל אינו תקין")).bind("email");
-            binder.forField(phoneField).withValidator(new StringLengthValidator("מספר לא תקין", 8, 10)).bind("phone");
-            binder.forField(taxIdField).withValidator(new StringLengthValidator("לא תקין", 9, 9)).bind("tax_id");
 
 
-            if (binder.validate().isOk()) {
+                HttpEntity<?> requestEntity = new HttpEntity<>(clientRequest, headers);
+
+                String str = new String();
                 try {
-                    HttpEntity<?> requestEntity = new HttpEntity<>(clientRequest, headers);
                     ResponseEntity<CreateClientResponse> response = restTemplate.exchange(
                             "http://localhost:8080/client/create",
                             HttpMethod.POST,
                             requestEntity,
                             CreateClientResponse.class
                     );
-                    message = response.getBody().message();
-                    if (response.getStatusCode().is2xxSuccessful()) {
-                        Notification.show(message, 3000, Notification.Position.MIDDLE);
-                    } else {
 
-                        Notification.show(message, 4000, Notification.Position.MIDDLE);
+                    str = response.getBody().message();
+
+                    if (response.getStatusCode().is2xxSuccessful()) {
+                        Notification.show(response.getBody().message(), 3000, Notification.Position.MIDDLE);
                     }
 
                 } catch (HttpClientErrorException e) {
-                    Notification.show(message);
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    JsonNode node = objectMapper.readTree(e.getResponseBodyAsString());
+                    String errorMessage = node.get("message").asText();
+                    Notification.show(errorMessage,3000,Notification.Position.MIDDLE);
                 }
-            }
+
 
     }
 
@@ -399,7 +393,7 @@ public class ClientsView extends VerticalLayout implements BeforeEnterObserver {
     /**
      * Opens a confirmation dialog to delete a selected client.
      * On confirmation, sends a DELETE request to the backend using the client's tax ID.
-     * Shows success/failure message and refreshes the view upon completion.
+     * Shows a success/failure message and refreshes the view upon completion.
      *
      * @return the opened {@link ConfirmDialog}
      */
@@ -410,7 +404,7 @@ public class ClientsView extends VerticalLayout implements BeforeEnterObserver {
         confirmDialog.setText("?פעולה זו תמחק את נתוני הלקוח לצמיתות. האם לאשר מחיקה");
 
         confirmDialog.setCancelable(true);
-        confirmDialog.addCancelListener(event -> {confirmDialog.close();});
+        confirmDialog.addCancelListener(event -> confirmDialog.close());
 
         confirmDialog.addClassNames(LumoUtility.AlignItems.CENTER);
         confirmDialog.setConfirmText("אשר");
@@ -470,9 +464,6 @@ public class ClientsView extends VerticalLayout implements BeforeEnterObserver {
             return;
         }
 
-
-        String username = jwtUtil.extractUsername(token);
-
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
         HttpEntity<String> entity = new HttpEntity<>(headers);
@@ -482,7 +473,7 @@ public class ClientsView extends VerticalLayout implements BeforeEnterObserver {
             ResponseEntity<LoadClientResponse> response = restTemplate.exchange(
                     "http://localhost:8080/client/load-clients",
                     HttpMethod.GET, entity, LoadClientResponse.class);
-            grid.setItems(response.getBody().clients());
+
             message = response.getBody().message();
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {

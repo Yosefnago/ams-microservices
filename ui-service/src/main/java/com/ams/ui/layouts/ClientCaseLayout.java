@@ -1,16 +1,16 @@
 package com.ams.ui.layouts;
 
 import com.ams.commonsecurity.utils.JwtUtil;
+import com.ams.dtos.clientDto.GrantAccessRequestDto;
+import com.ams.dtos.clientDto.GrantAccessResponse;
 import com.ams.dtos.clientDto.LoadClientDetailsCaseResponse;
+import com.ams.ui.api.clientside.ClientHttpService;
 import com.ams.ui.views.ClientsView;
-import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.html.Anchor;
-import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.html.H6;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
@@ -24,18 +24,9 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.server.VaadinSession;
-import com.vaadin.flow.spring.annotation.RouteScope;
-import com.vaadin.flow.spring.annotation.UIScope;
-import com.vaadin.flow.spring.annotation.VaadinSessionScope;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.*;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-
-import static io.netty.util.concurrent.FastThreadLocal.removeAll;
 
 /**
  * {@code ClientCaseLayout} is a layout used in views related to a specific client case.
@@ -63,7 +54,7 @@ public class ClientCaseLayout extends AppLayout implements BeforeEnterObserver {
     HorizontalLayout headerLayout;
     private final JwtUtil jwtUtil;
     private final RestTemplate restTemplate;
-
+    private final ClientHttpService clientHttpService;
     private String selectedClientId;
     private H6 bussName, email2, address2, id, phone2, type2;
 
@@ -77,9 +68,10 @@ public class ClientCaseLayout extends AppLayout implements BeforeEnterObserver {
      *
      * @param restTemplate the HTTP client used to fetch client details from the backend
      */
-    public ClientCaseLayout(@Autowired RestTemplate restTemplate,JwtUtil jwtUtil) {
+    public ClientCaseLayout(@Autowired RestTemplate restTemplate,JwtUtil jwtUtil,ClientHttpService clientHttpService) {
         this.restTemplate = restTemplate;
         this.jwtUtil = jwtUtil;
+        this.clientHttpService = clientHttpService;
     }
 
     /**
@@ -137,7 +129,7 @@ public class ClientCaseLayout extends AppLayout implements BeforeEnterObserver {
         clientDetailsLayout.setPadding(true);
         clientDetailsLayout.setAlignItems(FlexComponent.Alignment.START);
 
-        // כפתורים
+
         backButton = new Button("חזור", e ->
                 UI.getCurrent().getPage().executeJs("window.history.back()")
         );
@@ -197,7 +189,6 @@ public class ClientCaseLayout extends AppLayout implements BeforeEnterObserver {
 
         String role = jwtUtil.extractRole(token);
 
-
         header(role);
         loadClientData(token);
     }
@@ -236,48 +227,27 @@ public class ClientCaseLayout extends AppLayout implements BeforeEnterObserver {
         dialog.open();
     }
     private void grantAccess(String clientId, String clientName, String clientUsername, String clientPassword) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth((String) VaadinSession.getCurrent().getAttribute("jwt"));
-        HttpEntity<String> entity = new HttpEntity<>(headers);
+        String token = (String) VaadinSession.getCurrent().getAttribute("jwt");
 
-        String url = "http://localhost:8080/client/grant-access" +
-                "?clientId=" + clientId +
-                "&clientUsername=" + clientUsername +
-                "&clientPassword=" + clientPassword;
+        GrantAccessRequestDto request = new GrantAccessRequestDto(clientId, clientName, clientUsername, clientPassword);
+        GrantAccessResponse response = clientHttpService.grantAccess(request, token);
 
-        try {
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
-            if (response.getStatusCode() == HttpStatus.OK) {
-                Notification.show("גישה ניתנה ללקוח בהצלחה", 3000, Notification.Position.TOP_CENTER);
-            } else {
-                Notification.show("שגיאה במתן גישה ללקוח: " + response.getBody(), 4000, Notification.Position.TOP_CENTER);
-            }
-        } catch (Exception e) {
-            Notification.show("שגיאה כללית: " + e.getMessage(), 5000, Notification.Position.TOP_CENTER);
-            e.printStackTrace();
+        if (response != null && response.success()) {
+
+            Notification.show(response.message(), 3000, Notification.Position.TOP_CENTER);
+
+        }else {
+            Notification.show(response.message(), 4000, Notification.Position.TOP_CENTER);
         }
     }
     private void loadClientData(String token) {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setBearerAuth(token);
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
-            String url = "http://localhost:8080/client/load-case-details?clientId=" + selectedClientId;
 
-            ResponseEntity<LoadClientDetailsCaseResponse> response = restTemplate.exchange(
-                    url, HttpMethod.GET, entity, LoadClientDetailsCaseResponse.class
-            );
+        LoadClientDetailsCaseResponse clientData = clientHttpService.loadClientDetails(token, selectedClientId);
 
-            LoadClientDetailsCaseResponse clientData = response.getBody();
-            msg = clientData.message();
-
-            if (response.getStatusCode().is2xxSuccessful() && clientData != null && clientData.success()) {
-                updateHeader(clientData);
-            } else {
-                Notification.show("שגיאה בטעינת פרטי הלקוח", 3000, Notification.Position.MIDDLE);
-            }
-        } catch (Exception e) {
-            Notification.show(msg != null ? msg : "שגיאה", 3000, Notification.Position.MIDDLE);
+        if (clientData != null && clientData.success()) {
+            updateHeader(clientData);
+        } else {
+            Notification.show(clientData != null ? clientData.message() : "שגיאה כללית", 3000, Notification.Position.MIDDLE);
         }
     }
 }

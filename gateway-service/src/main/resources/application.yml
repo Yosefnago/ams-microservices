@@ -20,8 +20,7 @@ spring:
         - id: client-service
           uri: lb://client-service
           predicates:
-            - Path=/client/**
-
+            - Path=/client/**,/document/**,/invoice/**
 
         - id: ui-service
           uri: lb://ui-service

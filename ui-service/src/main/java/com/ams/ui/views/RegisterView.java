@@ -2,40 +2,25 @@ package com.ams.ui.views;
 
 
 
-import com.ams.dtos.loginDto.LoginRequest;
 import com.ams.dtos.registerDto.RegisterRequest;
 import com.ams.dtos.registerDto.RegisterResponse;
-import com.vaadin.flow.component.Text;
+import com.ams.ui.api.clientside.RegisterService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Header;
-import com.vaadin.flow.component.login.LoginForm;
-import com.vaadin.flow.component.login.LoginI18n;
-import com.vaadin.flow.component.login.LoginOverlay;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.Autocomplete;
 import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.dom.Style;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
-import com.vaadin.flow.theme.lumo.LumoUtility;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.*;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
-
-import java.util.stream.Stream;
 
 
 /**
@@ -60,7 +45,7 @@ import java.util.stream.Stream;
 @AnonymousAllowed
 public class RegisterView extends VerticalLayout {
 
-    private final RestTemplate restTemplate;
+    private final RegisterService registerService;
     private Button saveButton;
     private Button cancelButton;
     private TextField firstName;
@@ -71,37 +56,24 @@ public class RegisterView extends VerticalLayout {
     private PasswordField confirmPassword;
     private TextField phone;
     private Div div;
-    String msg;
+    private FormLayout formLayout;
 
-    /**
+     /**
      * Constructs the registration view with an injected {@link RestTemplate} for HTTP communication.
      *
      * @param restTemplate the {@code RestTemplate} used for sending registration requests to the server
      */
-    public RegisterView(@Autowired RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
+    public RegisterView(@Autowired RegisterService registerService) {
+        this.registerService = registerService;
         createRegisterView();
     }
 
     /**
      * Initializes and builds the registration form UI components,
      * including fields for user details, password validation, and control buttons.
-     * <p>
-     * The form includes:
-     * <ul>
-     *     <li>First name</li>
-     *     <li>Last name</li>
-     *     <li>Username</li>
-     *     <li>Email</li>
-     *     <li>Phone</li>
-     *     <li>Password</li>
-     *     <li>Confirm password</li>
-     * </ul>
-     * </p>
-     * <p>
      * Includes Save and Cancel buttons.
      * Save triggers the registration logic, while Cancel navigates back to the login screen.
-     * </p>
+     *
      */
     public void createRegisterView(){
 
@@ -118,7 +90,7 @@ public class RegisterView extends VerticalLayout {
         div.setHeight("600px");
         div.setWidth("700px");
 
-        FormLayout formLayout = new FormLayout();
+        formLayout = new FormLayout();
         formLayout.setWidthFull();
         formLayout.setHeightFull();
         firstName = new TextField("First Name");
@@ -170,9 +142,6 @@ public class RegisterView extends VerticalLayout {
     private void save()  {
 
         try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
             RegisterRequest registerRequest = new RegisterRequest(
                     firstName.getValue(),
                     lastName.getValue(),
@@ -182,19 +151,16 @@ public class RegisterView extends VerticalLayout {
                     phone.getValue()
             );
 
-            HttpEntity<?> requestEntity = new HttpEntity<>(registerRequest, headers);
-            String url = "http://localhost:8080/auth/register";
+            RegisterResponse response = registerService.register(registerRequest);
 
-            ResponseEntity<RegisterResponse> response =
-                    restTemplate.exchange(url, HttpMethod.POST, requestEntity, RegisterResponse.class);
-            msg = response.getBody().message();
-
-            if (response.getBody() != null && response.getBody().success()) {
-                Notification.show(msg, 3000, Notification.Position.MIDDLE);
+            if (response != null && response.success()) {
+                Notification.show(response.message(), 3000, Notification.Position.MIDDLE);
                 UI.getCurrent().navigate(LoginView.class);
+            }else{
+                Notification.show(response.message(), 3000, Notification.Position.MIDDLE);
             }
-        }catch (HttpClientErrorException e){
-            Notification.show(msg, 3000, Notification.Position.MIDDLE);
+        }catch (HttpClientErrorException e) {
+            Notification.show(e.getMessage(), 3000, Notification.Position.MIDDLE);
         }
     }
 }

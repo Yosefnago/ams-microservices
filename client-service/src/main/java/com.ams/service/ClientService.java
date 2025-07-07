@@ -10,6 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -58,10 +59,16 @@ public class ClientService {
      * @param request the client data wrapped in {@link CreateClientRequest}
      * @throws IllegalStateException if saving fails or if an exception occurs
      */
+    @Transactional
     public void createNewClient(CreateClientRequest request) {
-        try{
+
+        String validationError = validateClientRequest(request);
+        if (validationError != null) {
+            throw new IllegalStateException(validationError);
+        }
 
             ClientDetails clientEntity = new ClientDetails();
+
             clientEntity.setBusinessName(request.businessName());
             clientEntity.setClientId(request.tax_id());
             clientEntity.setEmail(request.email());
@@ -74,22 +81,44 @@ public class ClientService {
             clientEntity.setBankBranch(request.bankBranch());
             clientEntity.setBankAccountNumber(request.bankNumber());
             clientEntity.setAccountOwnerName(request.bankOwnerName());
+            clientEntity.setRole("CLIENT");
             String username = jwtUtil.extractUsername(request.token());
             clientEntity.setAccountantName(username);
-
             clientRepository.save(clientEntity);
 
-        } catch (Exception e) {
-            throw new IllegalStateException("Connection is bad..");
+    }
+    private String validateClientRequest(CreateClientRequest request) {
+        if (clientRepository.existsByBusinessName(request.businessName())) {
+            return "שם העסק כבר קיים במערכת";
+        }
+        if (clientRepository.existsByClientId(request.tax_id())) {
+            return "תעודת זהות כבר קיימת במערכת";
+        }
+        if (clientRepository.existsByBankAccountNumber(request.bankNumber())) {
+            return "מספר חשבון הבנק כבר קיים במערכת";
         }
 
+        if (!request.tax_id().matches("\\d{9}")) {
+            return "מספר תעודת זהות לא תקין";
+        }
+
+        if (!request.email().matches("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$")) {
+            return "כתובת אימייל לא תקינה";
+        }
+
+        if (!request.phone().matches("05\\d{8}")) {
+            return "מספר טלפון לא תקין";
+        }
+
+        return null; // הכל תקין
     }
-    /**
-     * Retrieves a client by their tax ID (ת.ז/ח.פ).
-     *
-     * @param clientId the unique tax ID of the client
-     * @return the {@link ClientDetails} or {@code null} if not found
-     */
+
+        /**
+         * Retrieves a client by their tax ID (ת.ז/ח.פ).
+         *
+         * @param clientId the unique tax ID of the client
+         * @return the {@link ClientDetails} or {@code null} if not found
+         */
     public ClientDetails getClientsByTaxId(String clientId) {
 
         return clientRepository.findByClientId(clientId);
@@ -160,47 +189,48 @@ public class ClientService {
      * @param clientDetails the {@link ClientDetails} object with updated fields
      * @throws IllegalStateException if the client does not exist
      */
+    @Transactional
     public void updateClient(ClientDetails clientDetails){
 
         ClientDetails existing = clientRepository.findByClientId(clientDetails.getClientId());
 
-        if (existing == null) {
+        if (Objects.isNull(existing)) {
             throw new IllegalStateException("Client not found with id: " + clientDetails.getClientId());
         }
 
-        if (clientDetails.getBusinessName() != null) {
+        if (Objects.nonNull(clientDetails.getBusinessName())) {
             existing.setBusinessName(clientDetails.getBusinessName());
         }
 
-        if (clientDetails.getEmail() != null) {
+        if (Objects.nonNull(clientDetails.getEmail())) {
             existing.setEmail(clientDetails.getEmail());
         }
 
-        if (clientDetails.getPhone() != null) {
+        if (Objects.nonNull(clientDetails.getPhone())) {
             existing.setPhone(clientDetails.getPhone());
         }
 
-        if (clientDetails.getAddress() != null) {
+        if (Objects.nonNull(clientDetails.getAddress())) {
             existing.setAddress(clientDetails.getAddress());
         }
 
-        if (clientDetails.getZip() != null) {
+        if (Objects.nonNull(clientDetails.getZip())) {
             existing.setZip(clientDetails.getZip());
         }
 
-        if (clientDetails.getBusinessType() != null) {
+        if (Objects.nonNull(clientDetails.getBusinessType())) {
             existing.setBusinessType(clientDetails.getBusinessType());
         }
 
-        if (clientDetails.getBankName() != null) {
+        if (Objects.nonNull(clientDetails.getBankName())) {
             existing.setBankName(clientDetails.getBankName());
         }
 
-        if (clientDetails.getBankBranch() != null) {
+        if (Objects.nonNull(clientDetails.getBankBranch())) {
             existing.setBankBranch(clientDetails.getBankBranch());
         }
 
-        if (clientDetails.getBankAccountNumber() != null) {
+        if (Objects.nonNull(clientDetails.getBankAccountNumber())) {
             existing.setBankAccountNumber(clientDetails.getBankAccountNumber());
         }
 
@@ -208,7 +238,8 @@ public class ClientService {
     }
     public void grantLoginAccess(String clientId, String clientUsername, String clientPassword) {
         ClientDetails client = clientRepository.findByClientId(clientId);
-        if (client == null) {
+
+        if (Objects.isNull(client)) {
             throw new IllegalArgumentException("לקוח לא נמצא");
         }
 

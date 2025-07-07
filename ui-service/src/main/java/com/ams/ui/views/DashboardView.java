@@ -3,28 +3,22 @@ package com.ams.ui.views;
 
 import com.ams.commonsecurity.utils.JwtUtil;
 import com.ams.dtos.clientDto.LoadNumOfClientsResponse;
+import com.ams.ui.api.clientside.ClientHttpService;
+import com.ams.ui.api.clientside.DocumentHttpService;
 import com.ams.ui.layouts.MainLayout;
-import com.vaadin.copilot.javarewriter.custom.DashboardComponentHandle;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.dom.Style;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -51,16 +45,18 @@ import org.springframework.web.client.RestTemplate;
 @RolesAllowed( "ACCOUNTANT")
 public class DashboardView extends VerticalLayout {
 
-    RouterLink link;
-    String accountantUsername;
-    private String message;
     private RestTemplate restTemplate;
     private final JwtUtil jwtUtil;
+    private final DocumentHttpService documentHttpService;
+    private final ClientHttpService clientHttpService;
 
     @Autowired
-    public DashboardView(RestTemplate restTemplate, JwtUtil jwtUtil) {
+    public DashboardView(RestTemplate restTemplate, JwtUtil jwtUtil, DocumentHttpService documentHttpService,ClientHttpService clientHttpService) {
         this.jwtUtil = jwtUtil;
         this.restTemplate = restTemplate;
+        this.documentHttpService = documentHttpService;
+        this.clientHttpService = clientHttpService;
+
         setSizeFull();
 
         HorizontalLayout horizontalLayout = new HorizontalLayout();
@@ -84,6 +80,7 @@ public class DashboardView extends VerticalLayout {
         div.setHeight("180px");
         div.setWidth("210px");
         div.getStyle().set("margin-right","10px");
+        div.getStyle().setCursor("pointer");
         div.addClassNames(
                 LumoUtility.BoxShadow.MEDIUM,
                 LumoUtility.BorderRadius.LARGE,
@@ -102,31 +99,18 @@ public class DashboardView extends VerticalLayout {
 
         String token = (String) VaadinSession.getCurrent().getAttribute("jwt");
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(token);
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-
         try {
-            ResponseEntity<Integer> response = restTemplate.exchange(
-                    "http://localhost:8080/client/loadNumOfDocuments",
-                    HttpMethod.GET,
-                    entity,
-                    Integer.class);
-
-            if (response.hasBody() && response.getBody() != null) {
-                div.getElement().setText("מסמכים לטיפול: " + response.getBody().toString());
+            Integer count = documentHttpService.loadNumOfDocuments(token);
+            if (count != null) {
+                div.getElement().setText("מסמכים לטיפול: " + count);
             } else {
                 div.getElement().setText("מסמכים לטיפול: " + 0);
             }
-
         } catch (Exception e) {
-            Notification.show(message, 4000, Notification.Position.MIDDLE);
+            Notification.show("שגיאה", 4000, Notification.Position.MIDDLE);
         }
 
-        div.addClickListener(event -> {
-           UI.getCurrent().navigate(DocumentCareView.class);
-        });
+        div.addClickListener(event -> UI.getCurrent().navigate(DocumentCareView.class));
 
         return div;
     }
@@ -139,7 +123,9 @@ public class DashboardView extends VerticalLayout {
      * @return a styled component with client count and click navigation
      */
     private Component numOfClients() {
+
         Div numOfClients = new Div();
+
         numOfClients.setHeight("180px");
         numOfClients.setWidth("210px");
         numOfClients.getStyle().set("margin-right","160px");
@@ -163,9 +149,8 @@ public class DashboardView extends VerticalLayout {
 
 
         numOfClients.getStyle().setCursor("pointer");
-        numOfClients.addClickListener(event -> {
-            UI.getCurrent().navigate(ClientsView.class);
-        });
+        numOfClients.addClickListener(event -> UI.getCurrent().navigate(ClientsView.class));
+
         String token = (String) VaadinSession.getCurrent().getAttribute("jwt");
 
         if (token == null || token.trim().isEmpty() || !jwtUtil.validateToken(token)) {
@@ -173,34 +158,19 @@ public class DashboardView extends VerticalLayout {
             return numOfClients;
         }
 
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(token);
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-        String str="";
-
         try {
-            ResponseEntity<LoadNumOfClientsResponse> response = restTemplate.exchange(
-                    "http://localhost:8080/client/load-numOfclients",
-                    HttpMethod.GET,
-                    entity,
-                    LoadNumOfClientsResponse.class);
-            message = response.getBody().message();
+            LoadNumOfClientsResponse response = clientHttpService.loadNumOfClients(token);
 
-            if (response.hasBody() && response.getBody() != null) {
-                numOfClients.getElement().setText("לקוחות במערכת: " + response.getBody().numOfClients());
+            if (response != null && response.success()) {
+                numOfClients.getElement().setText("לקוחות במערכת: " + response.numOfClients());
             } else {
-                numOfClients.getElement().setText(message);
+                numOfClients.getElement().setText("לקוחות במערכת: " + 0);
             }
 
-            str = "לקוחות במערכת: " + response.getBody().numOfClients();
         } catch (Exception e) {
-            Notification.show(message, 4000, Notification.Position.MIDDLE);
+            Notification.show("לקוחות במערכת: " + 0, 4000, Notification.Position.MIDDLE);
         }
 
-
-            numOfClients.getElement().setText(str);
         return numOfClients;
     }
     /**
@@ -265,10 +235,8 @@ public class DashboardView extends VerticalLayout {
 
         workTime.getElement().setText("שעון נוכחות");
         workTime.getStyle().setCursor("pointer");
-        workTime.addClickListener(event -> {
-            
-           UI.getCurrent().navigate(AttendanceView.class);
-        });
+        workTime.addClickListener(event -> UI.getCurrent().navigate(AttendanceView.class));
+
 
         return workTime;
     }
@@ -305,8 +273,4 @@ public class DashboardView extends VerticalLayout {
         return pays;
 
     }
-    private void charts(){
-
-    }
-
 }

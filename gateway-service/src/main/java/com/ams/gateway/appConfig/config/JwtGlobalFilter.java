@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
 
 /**
  * {@code JwtGlobalFilter} is a {@link GlobalFilter} implementation used in Spring Cloud Gateway
@@ -105,16 +106,8 @@ public class JwtGlobalFilter implements GlobalFilter, Ordered {
      * @return {@code true} if the path is public; {@code false} otherwise
      */
     private boolean isPublicPath(String path) {
-        return path.equals("/auth/login") ||
-                path.equals("/auth/register") ||
-                path.equals("/client/login") ||
-                path.equals("/") ||
-                path.equals("/index") ||
-                path.equals("/index.html") ||
-                path.startsWith("/frontend/") ||
-                path.startsWith("/VAADIN/") ||
-                path.startsWith("/app/") ||
-                path.equals("/favicon.ico");
+        return Set.of("/auth/login","/auth/register","/client/login","/","/index",
+                "/index.html","/frontend/","/VAADIN/","/app/","/favicon.ico").contains(path);
     }
     /**
      * Sends an HTTP 401 Unauthorized response with a custom message.

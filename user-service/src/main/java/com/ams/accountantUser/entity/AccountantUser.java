@@ -54,4 +54,7 @@ public class AccountantUser {
     @Column(name = "Phone",unique = true)
     private String phone;
 
+    @Column(name = "Role",nullable = false)
+    private String role;
+
 }

@@ -13,8 +13,11 @@ import com.ams.dtos.registerDto.RegisterResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -65,23 +68,25 @@ public class UserController {
 
         Optional<AccountantUser> accountantUser = accountantUserService.findByUsername(username);
 
-        if (accountantUser == null){
-            ResponseEntity.ok(new AccountantDetailsResponse(false,
-                    "שגיאה בטעינה פרטים",
+        if (accountantUser.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new AccountantDetailsResponse(
+                    false,
+                    "שגיאה בטעינת פרטי המשתמש",
                     null,
                     null,
                     null,
-                    null)
-            );
+                    null
+            ));
         }
+        AccountantUser user = accountantUser.get();
         return ResponseEntity.ok(new AccountantDetailsResponse(
                 true,
                    "פרטים נטענו בהצלחה",
-                accountantUser.get().getUsername(),
-                accountantUser.get().getEmail(),
-                accountantUser.get().getPhone(),
-                accountantUser.get().getId()
-
+                user.getUsername(),
+                user.getEmail(),
+                user.getPhone(),
+                user.getId()
         ));
     }
 }

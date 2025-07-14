@@ -14,6 +14,23 @@ AMS System
 - **Common Utilities** (common-utils)
 - **Common Security** (common-security)
 
+📦 Core Features
+✅ Role-Based Document Workflow (Client ↔ Accountant)
+
+📤 PDF/Image Upload with OCR Parsing for invoices
+
+📑 Grid Views for Clients and Accountants with filtering, sorting
+
+🔁 Status Management (Pending, Approved, Rejected)
+
+✏️ Reject Reason Tracking
+
+🔐 Secure Login using Spring Security and JWT
+
+🔄 Microservice Communication via Gateway and Eureka
+
+
+
 ## ⚙️ Technologies Used
 - **Java 17**
 - **Spring Boot 3.2.3**
@@ -26,36 +43,45 @@ AMS System
 - **Spring Cloud Gateway**
 - **Maven**
   
-## 📦 Module Descriptions
+📦 Module Descriptions
+🛡️ Gateway Service (gateway-service)
+The central API entry point. Handles request routing and token forwarding to downstream services.
 
-### 🛡️ Gateway Service
-The API Gateway that routes all client requests to the appropriate microservices. It handles authentication, request routing.
+🔍 Eureka Server (eureka-server)
+Provides service discovery for all registered microservices in the system.
 
-### 🔍 Eureka Server
-Service discovery server that allows microservices to find and communicate with each other.
+👤 User Service (user-service)
+Manages user accounts, roles, authentication, and token generation using Spring Security and JWT.
 
-### 👤 User Service
-Manages user accounts, authentication, and authorization. Handles user registration, login, and profile management.
+👥 Client Service (client-service)
+Business logic center of the system, responsible for:
 
-### 👥 Client Service
-Manages client information and related operations for the accounting system.
+Managing client profiles and business entities
 
-### 💻 UI Service
-Provides the web-based user interface for the application using Vaadin framework.
+Document management: upload, delete, status updates, rejection flow
 
-### 🧰 Common Utils
-Shared utility classes and functions used across multiple microservices.
+Invoice processing: PDF/image upload, Tesseract OCR field extraction, status flow
 
-### 🔐 Common Security
-Shared security components, including JWT authentication utilities, used across microservices.
+💻 UI Service (ui-service)
+Frontend application developed with Vaadin 24, providing responsive views for both clients and accountants.
 
-## 🛠️ Setup 
+🧰 Common Utils (common-utils)
+Contains shared utility classes and constants used across all services.
 
-### ✅ Prerequisites
+🔐 Common Security (common-security)
+Provides shared JWT token utilities, custom user detail service, and Spring Security configuration.
 
-- Java 17 or higher
-- Maven 3.6 or higher
-- PostgreSQL (any version 13+)
+
+
+🛠️ Setup Instructions
+✅ Prerequisites
+Java 17+
+
+Maven 3.6+
+
+PostgreSQL (13+)
+
+Tesseract OCR installed (if using invoice OCR)
 
 
 ### Contributors

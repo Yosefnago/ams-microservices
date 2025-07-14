@@ -323,7 +323,6 @@ public class InvoicesView extends VerticalLayout implements BeforeEnterObserver 
         VerticalLayout invoiceDetails = new VerticalLayout(
                 new TextField("מספר חשבונית: " + extractedData.invoiceNumber()),
                 new TextField("ספק: " + extractedData.sapakName()),
-                new TextField("מע\"מ: " + extractedData.vatAmount()),
                 new TextField("סכום לפני מע\"מ: " + extractedData.priceBeforeVat()),
                 new TextField("סכום כולל מע\"מ: " + extractedData.price())
         );

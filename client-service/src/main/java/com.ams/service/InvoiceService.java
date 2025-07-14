@@ -53,8 +53,8 @@ public class InvoiceService {
      * @param invoiceNumber the invoice number
      * @return the rejection reason string
      */
-    public String getRejectedReasonInvoice(String invoiceNumber){
-        return invoiceRepository.getRejectedReason(invoiceNumber);
+    public String getRejectedReasonInvoice(String fileName){
+        return invoiceRepository.getRejectedReason(fileName);
     }
     /**
      * Updates an invoice's status, rejection reason, and extracted fields.
@@ -81,9 +81,9 @@ public class InvoiceService {
      * @param invoiceNumber the invoice number
      */
     @Transactional
-    public void deleteInvoiceByInvoiceNumber(String invoiceNumber){
+    public void deleteByFileName(String fileName){
 
-        invoiceRepository.deleteByInvoiceByInvoiceNumber(invoiceNumber);
+        invoiceRepository.deleteByFileName(fileName);
     }
     /**
      * Retrieves the binary (PDF) file of an invoice.

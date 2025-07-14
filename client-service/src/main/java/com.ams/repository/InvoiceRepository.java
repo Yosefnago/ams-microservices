@@ -33,8 +33,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
      * @param invoiceNumber the invoice number
      * @return the rejection reason string
      */
-    @Query("select i.reason from Invoice i where i.invoiceNumber = :invoiceNumber")
-    String getRejectedReason(String invoiceNumber);
+    @Query("select i.reason from Invoice i where i.fileName = :fileName")
+    String getRejectedReason(String fileName);
 
     /**
      * Updates the status and rejection reason of an invoice.
@@ -56,8 +56,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
      */
     @Modifying
     @Transactional
-    @Query("DELETE FROM Invoice i WHERE i.invoiceNumber = :invoiceNumber")
-    void deleteByInvoiceByInvoiceNumber(@Param("invoiceNumber") String invoiceNumber);
+    @Query("DELETE FROM Invoice i WHERE i.fileName = :fileName")
+    void deleteByFileName(@Param("fileName") String fileName);
 
     /**
      * Retrieves all invoices belonging to a specific client,

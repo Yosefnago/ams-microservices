@@ -57,12 +57,12 @@ public class InvoiceController {
     /**
      * Deletes an invoice by its invoice number.
      *
-     * @param invoiceNumber the invoice number to delete
+     * @param fileName the invoice number to delete
      * @return HTTP 200 OK on success
      */
-    @DeleteMapping("/delete-invoice/{invoiceNumber}")
-    public ResponseEntity<Void> deleteInvoice(@PathVariable String invoiceNumber){
-        invoiceService.deleteInvoiceByInvoiceNumber(invoiceNumber);
+    @DeleteMapping("/delete-invoice/{fileName}")
+    public ResponseEntity<Void> deleteInvoice(@PathVariable String fileName){
+        invoiceService.deleteByFileName(fileName);
         return ResponseEntity.ok().build();
     }
 
@@ -166,9 +166,9 @@ public class InvoiceController {
      * @param invoiceNumber the invoice number
      * @return rejection reason as plain text
      */
-    @GetMapping("/get-invoice-rejectReason/{invoiceNumber}")
-    public ResponseEntity<String> getRejectReasonInvoice(@PathVariable String invoiceNumber) {
-        String reason = invoiceService.getRejectedReasonInvoice(invoiceNumber);
+    @GetMapping("/get-invoice-rejectReason/{fileName}")
+    public ResponseEntity<String> getRejectReasonInvoice(@PathVariable String fileName) {
+        String reason = invoiceService.getRejectedReasonInvoice(fileName);
 
         return ResponseEntity.ok(reason);
     }

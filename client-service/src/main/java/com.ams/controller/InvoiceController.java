@@ -163,7 +163,7 @@ public class InvoiceController {
     /**
      * Returns the rejection reason for a specific invoice, if any.
      *
-     * @param invoiceNumber the invoice number
+     * @param fileName the invoice number
      * @return rejection reason as plain text
      */
     @GetMapping("/get-invoice-rejectReason/{fileName}")

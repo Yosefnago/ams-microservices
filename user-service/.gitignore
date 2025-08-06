@@ -3,6 +3,15 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+### resources
+
+src/main/resources/application.properties
+client-service/src/main/resources/application.yml
+gateway-service/src/main/resources/application.yml
+ui-service/src/main/resources/application.yml
+user-service/src/main/resources/application.yml
+ereuka-server/src/main/resources/application.properties
+
 
 ### STS ###
 .apt_generated

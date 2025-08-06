@@ -4,6 +4,14 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+client-service/src/main/resources/application.yml
+user-service/src/main/resources/application.yml
+ui-service/src/main/resources/application.yml
+gateway-service/src/main/resources/application.yml
+ereuka-server/src/main/resources/application.properties
+
+
+
 ### STS ###
 .apt_generated
 .classpath

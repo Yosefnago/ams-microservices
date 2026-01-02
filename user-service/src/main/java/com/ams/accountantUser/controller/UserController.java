@@ -1,23 +1,16 @@
 package com.ams.accountantUser.controller;
 
 import com.ams.accountantUser.entity.AccountantUser;
-import com.ams.accountantUser.reposiroty.AccountantUserRepository;
 import com.ams.accountantUser.service.AccountantUserService;
+import com.ams.accountantUser.service.DocumentService;
 import com.ams.commonsecurity.utils.JwtUtil;
 import com.ams.dtos.accountantDto.AccountantDetailsResponse;
 import com.ams.dtos.clientDto.LoadClientDetailsCaseResponse;
-import com.ams.dtos.loginDto.LoginRequest;
-import com.ams.dtos.loginDto.LoginResponse;
-import com.ams.dtos.registerDto.RegisterRequest;
-import com.ams.dtos.registerDto.RegisterResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -43,6 +36,7 @@ public class UserController {
 
     private final PasswordEncoder passwordEncoder;
     private final AccountantUserService accountantUserService;
+    private final DocumentService documentService;
     private final JwtUtil jwtUtil;
 
     /**
@@ -52,9 +46,10 @@ public class UserController {
      * @param jwtUtil               utility for JWT token operations
      * @param passwordEncoder       encoder used for password hashing
      */
-    public UserController(@Autowired AccountantUserService accountantUserService,JwtUtil jwtUtil,PasswordEncoder passwordEncoder) {
+    public UserController(@Autowired AccountantUserService accountantUserService,DocumentService documentService,JwtUtil jwtUtil,PasswordEncoder passwordEncoder) {
         this.accountantUserService = accountantUserService;
         this.jwtUtil = jwtUtil;
+        this.documentService = documentService;
         this.passwordEncoder = passwordEncoder;
     }
     /**
@@ -63,30 +58,31 @@ public class UserController {
      * @param username the username to look up
      * @return {@link AccountantDetailsResponse} containing user data or error message
      */
-    @GetMapping("/load-details")
-    public ResponseEntity<AccountantDetailsResponse> loadClientDetails(@RequestParam String username) {
 
-        Optional<AccountantUser> accountantUser = accountantUserService.findByUsername(username);
+    @GetMapping("/load-case-details")
+    public ResponseEntity<LoadClientDetailsCaseResponse> loadClientDetails(@RequestParam Long  clientId) {
+        Optional<AccountantUser> clientDetails = accountantUserService.getClientById(clientId);
 
-        if (accountantUser.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new AccountantDetailsResponse(
-                    false,
-                    "שגיאה בטעינת פרטי המשתמש",
-                    null,
-                    null,
-                    null,
-                    null
-            ));
+        //Client not found
+        if (clientDetails.isEmpty()) {
+            return ResponseEntity.ok(
+                    new LoadClientDetailsCaseResponse(false,
+                            "לקוח לא נמצא",
+                            null, null, null, null));
         }
-        AccountantUser user = accountantUser.get();
-        return ResponseEntity.ok(new AccountantDetailsResponse(
-                true,
-                   "פרטים נטענו בהצלחה",
-                user.getUsername(),
-                user.getEmail(),
-                user.getPhone(),
-                user.getId()
-        ));
+
+        //Client found, return client info
+        return ResponseEntity.ok(
+                new LoadClientDetailsCaseResponse(
+                        true,
+                        "פרטי לקוח נטענו בהצלחה",
+                        clientDetails.get().getBusinessName(),
+                        clientDetails.get().getTaxId(),
+                        clientDetails.get().getEmail(),
+                        clientDetails.get().getPhone()
+
+                )
+        );
     }
+
 }

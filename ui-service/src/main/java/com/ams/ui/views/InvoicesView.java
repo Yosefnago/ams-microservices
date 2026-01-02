@@ -10,7 +10,9 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.contextmenu.ContextMenu;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.IFrame;
 import com.vaadin.flow.component.html.Paragraph;
@@ -68,6 +70,8 @@ public class InvoicesView extends VerticalLayout implements BeforeEnterObserver 
     private String fileNameSelected;
     Button viewButton;
     private InvoiceGridDto extractedData;
+    private Long invoiceNumber = 100000l;
+    private final double VAT = 0.18d;
 
     public InvoicesView(RestTemplate restTemplate, JwtUtil jwtUtil) {
         this.restTemplate = restTemplate;
@@ -107,7 +111,11 @@ public class InvoicesView extends VerticalLayout implements BeforeEnterObserver 
         uploadButton.addClickListener(e -> {
             uploadDialog();
         });
-        headerBody.add(uploadButton);
+        Button createButton = new Button("יצירת חשבונית");
+        createButton.addClickListener(e -> {
+            createInvoiceDialog();
+        });
+        headerBody.add(createButton, uploadButton);
 
         grid.addColumn(InvoiceGrid::fileName).setHeader("שם מסמך");
         grid.addColumn(InvoiceGrid::invoiceNumber).setHeader("מספר חשבונית");
@@ -135,28 +143,7 @@ public class InvoicesView extends VerticalLayout implements BeforeEnterObserver 
                 String token = (String) VaadinSession.getCurrent().getAttribute("jwt");
 
                 String role = jwtUtil.extractRole(token);
-                if (role.equals("CLIENT")){
 
-                    ContextMenu contextMenu = new ContextMenu(viewButton);
-
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.setBearerAuth(token);
-                    headers.setContentType(MediaType.APPLICATION_JSON);
-
-                    HttpEntity<Void> entity = new HttpEntity<>(headers);
-                    String url = "http://localhost:8080/invoice/get-invoice-rejectReason/" + fileNameSelected;
-
-                    ResponseEntity<String> response = restTemplate.exchange(
-                            url,
-                            HttpMethod.GET,
-                            entity,
-                            String.class
-                    );
-                    contextMenu.setOpenOnClick(true);
-                    contextMenu.removeAll();
-                    contextMenu.add(new Paragraph(response.getBody()));
-
-                }
                 if (role.equals("ACCOUNTANT")) {
                     viewDocument();
                 }
@@ -186,6 +173,161 @@ public class InvoicesView extends VerticalLayout implements BeforeEnterObserver 
         layout.add(headerBody,grid);
 
         return layout;
+    }
+    private Component createInvoiceDialog() {
+        String token = (String) VaadinSession.getCurrent().getAttribute("jwt");
+        Dialog dialog = new Dialog();
+
+        dialog.setWidth("800px");
+        dialog.setHeight("800px");
+        dialog.open();
+
+        FormLayout formLayout = new FormLayout();
+        formLayout.setSizeFull();
+        dialog.add(formLayout);
+
+        TextField invoiceId = new TextField("מספר חשבונית");
+        invoiceId.setValue(String.valueOf(invoiceNumber));
+        invoiceId.setReadOnly(true);
+
+        DatePicker invoice_date = new DatePicker("תאריך חשבונית");
+
+        TextField buss_name = new TextField("שם העסק");
+        buss_name.setValue(String.valueOf(jwtUtil.extractUsername(token)));
+        buss_name.setReadOnly(true);
+
+        TextField buss_id = new TextField("ח.פ . ת.ז");
+        buss_id.setValue(String.valueOf(jwtUtil.extractClientId(token)));
+        buss_id.setReadOnly(true);
+
+        TextField invoice_to_name = new TextField("שם לקוח");
+
+        TextField invoice_to_id = new TextField("ת.ז לקוח");
+
+        TextField description = new TextField("פירוט");
+
+        TextField price_unit = new TextField("מחיר יחידה");
+
+        TextField total_price_before_vat = new TextField("מחיר לפני מעמ");
+
+        TextField total_price_after_vat = new TextField("מחיר אחרי מעמ");
+
+        TextField vat_amount = new TextField("סהכ מעמ");
+
+        TextField vat = new TextField("אחוז מעמ");
+        vat.setValue(String.valueOf(VAT*100) + " % ");
+        vat.setReadOnly(true);
+
+        DatePicker date_to_pay = new DatePicker("תאריך לתשלום");
+
+        DatePicker date_to_refund = new DatePicker("תאריך פירעון");
+
+
+
+        formLayout.setColspan(invoiceId, 1);
+        formLayout.setColspan(invoice_date, 1);
+        formLayout.setColspan(buss_name, 1);
+        formLayout.setColspan(buss_id, 1);
+        formLayout.setColspan(invoice_to_name, 2);
+        formLayout.setColspan(invoice_to_id, 2);
+        formLayout.setColspan(description, 2);
+        formLayout.setColspan(price_unit, 1);
+        formLayout.setColspan(total_price_before_vat, 1);
+        formLayout.setColspan(total_price_after_vat, 1);
+        formLayout.setColspan(vat_amount,1);
+        formLayout.setColspan(vat, 1);
+        formLayout.setColspan(date_to_pay, 2);
+        formLayout.setColspan(date_to_refund, 2);
+
+        formLayout.setResponsiveSteps(
+                new FormLayout.ResponsiveStep("0", 2)
+        );
+        Button save = new Button("צור");
+
+        formLayout.add(invoiceId, invoice_date, buss_name, buss_id,
+                invoice_to_name, invoice_to_id, description,
+                price_unit, total_price_before_vat, vat_amount,total_price_after_vat
+                , vat, date_to_pay, date_to_refund);
+
+        formLayout.add(save);
+        formLayout.getElement().setAttribute("dir", "rtl");
+
+
+        price_unit.addValueChangeListener(event -> {
+            if (!price_unit.isEmpty()) {
+                try {
+                    double price = Double.valueOf(price_unit.getValue());
+                    double vatPercent = VAT * 100;
+
+                    double vatAmountValue = price * VAT;
+                    double total = price + vatAmountValue;
+
+                    total_price_before_vat.setValue(String.valueOf(price));
+                    vat_amount.setValue(String.valueOf(vatAmountValue));
+                    total_price_after_vat.setValue(String.valueOf(total));
+                } catch (NumberFormatException e) {
+                    total_price_before_vat.clear();
+                    vat_amount.clear();
+                    total_price_after_vat.clear();
+                }
+            } else {
+                total_price_before_vat.clear();
+                vat_amount.clear();
+                total_price_after_vat.clear();
+            }
+        });
+
+
+        save.addClickListener(event -> {
+
+            InvoiceIncomeDto invoiceIncomeDto = new InvoiceIncomeDto(
+                    invoiceId.getValue(),
+                    invoice_date.getValue(),
+                    buss_name.getValue(),
+                    buss_id.getValue(),
+                    invoice_to_name.getValue(),
+                    invoice_to_id.getValue(),
+                    description.getValue(),
+                    Double.valueOf(price_unit.getValue()),
+                    Double.valueOf(total_price_before_vat.getValue()),
+                    VAT * 100,
+                    Double.valueOf(vat_amount.getValue()),
+                    Double.valueOf(total_price_after_vat.getValue()),
+                    date_to_pay.getValue(),
+                    date_to_refund.getValue()
+            );
+
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(token);
+
+            HttpEntity<InvoiceIncomeDto> request = new HttpEntity<>(invoiceIncomeDto, headers);
+
+            try {
+                ResponseEntity<InvoiceIncomeDto> response = restTemplate.exchange(
+                        "http://localhost:8085/invoice/create",
+                        HttpMethod.POST,
+                        request,
+                        InvoiceIncomeDto.class
+                );
+
+                if (response.getStatusCode().is2xxSuccessful()) {
+                    Notification.show("חשבונית נוצרה בהצלחה!", 3000, Notification.Position.MIDDLE);
+                    UI.getCurrent().refreshCurrentRoute(true);
+                } else {
+                    Notification.show("שגיאה ביצירת חשבונית", 3000, Notification.Position.MIDDLE);
+                }
+            } catch (Exception ex) {
+                Notification.show("קריאה נכשלה: " + ex.getMessage(), 5000, Notification.Position.MIDDLE);
+            }
+
+            Notification.show("חשבונית נוצרה בהצלחה!");
+
+        });
+
+
+        return dialog;
     }
     /**
      * Opens a dialog for uploading an invoice file using Vaadin Upload component.
@@ -275,7 +417,7 @@ public class InvoicesView extends VerticalLayout implements BeforeEnterObserver 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
         ResponseEntity<InvoiceUploadResponse> response = restTemplate.exchange(
-                "http://localhost:8080/invoice/upload-invoice",
+                "http://localhost:8085/invoice/upload-invoice",
                 HttpMethod.POST,
                 requestEntity,
                 InvoiceUploadResponse.class
@@ -327,18 +469,16 @@ public class InvoicesView extends VerticalLayout implements BeforeEnterObserver 
                 new TextField("סכום כולל מע\"מ: " + extractedData.price())
         );
 
-        TextArea rejectReason = new TextArea("סיבת דחייה");
-        rejectReason.setPlaceholder("נא לציין מדוע נדחה");
-        rejectReason.setWidthFull();
+
 
         Button approveButton = new Button("אשר", e -> {
-            updateInvoiceStatus("אושר", null);
+            updateInvoiceStatus("אושר");
             dialog.close();
             UI.getCurrent().refreshCurrentRoute(true);
         });
 
         Button rejectButton = new Button("דחה", e -> {
-            updateInvoiceStatus("נדחה", rejectReason.getValue());
+            updateInvoiceStatus("נדחה");
             dialog.close();
             UI.getCurrent().refreshCurrentRoute(true);
         });
@@ -347,7 +487,7 @@ public class InvoicesView extends VerticalLayout implements BeforeEnterObserver 
         actions.setWidthFull();
         actions.setJustifyContentMode(JustifyContentMode.END);
 
-        VerticalLayout leftSide = new VerticalLayout(invoiceDetails, rejectReason, actions);
+        VerticalLayout leftSide = new VerticalLayout(invoiceDetails, actions);
         leftSide.setWidth("40%");
         iframe.setWidth("60%");
 
@@ -365,7 +505,7 @@ public class InvoicesView extends VerticalLayout implements BeforeEnterObserver 
      * @return the extracted invoice DTO
      */
     private InvoiceGridDto fetchInvoiceData(String fileName, String token) {
-        String url = "http://localhost:8080/invoice/analyze-invoice/" + fileName;
+        String url = "http://localhost:8085/invoice/analyze-invoice/" + fileName;
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
@@ -387,7 +527,7 @@ public class InvoicesView extends VerticalLayout implements BeforeEnterObserver 
      * @return StreamResource containing the invoice PDF
      */
     private StreamResource fetchInvoicePdf(String fileName, String token) {
-        String url = "http://localhost:8080/invoice/get-invoice/" + fileName;
+        String url = "http://localhost:8085/invoice/get-invoice/" + fileName;
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
@@ -423,7 +563,7 @@ public class InvoicesView extends VerticalLayout implements BeforeEnterObserver 
      * @param newStatus the new status (e.g. "אושר", "נדחה")
      * @param reason    optional rejection reason (null if approved)
      */
-    private void updateInvoiceStatus(String newStatus, String reason) {
+    private void updateInvoiceStatus(String newStatus) {
         String token = (String) VaadinSession.getCurrent().getAttribute("jwt");
 
         HttpHeaders headers = new HttpHeaders();
@@ -436,13 +576,12 @@ public class InvoicesView extends VerticalLayout implements BeforeEnterObserver 
         body.put("invoiceNumber", extractedData.invoiceNumber());
         body.put("sapakName", extractedData.sapakName());
         body.put("price", extractedData.price());
-        if (reason != null) body.put("rejectionReason", reason);
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
 
         try {
             ResponseEntity<Void> response = restTemplate.exchange(
-                    "http://localhost:8080/invoice/update-invoice-status",
+                    "http://localhost:8085/invoice/update-invoice-status",
                     HttpMethod.PUT,
                     entity,
                     Void.class
@@ -469,7 +608,7 @@ public class InvoicesView extends VerticalLayout implements BeforeEnterObserver 
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        String url = "http://localhost:8080/invoice/delete-invoice/" + fileNameSelected;
+        String url = "http://localhost:8085/invoice/delete-invoice/" + fileNameSelected;
 
         try {
             ResponseEntity<Void> response = restTemplate.exchange(
@@ -506,7 +645,7 @@ public class InvoicesView extends VerticalLayout implements BeforeEnterObserver 
 
         try {
             ResponseEntity<LoadInvoicesResponse> response = restTemplate.exchange(
-                    "http://localhost:8080/invoice/load-invoices" ,
+                    "http://localhost:8085/invoice/load-invoices" ,
                     HttpMethod.GET, entity, LoadInvoicesResponse.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {

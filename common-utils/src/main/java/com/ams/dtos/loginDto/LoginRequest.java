@@ -1,5 +1,6 @@
 package com.ams.dtos.loginDto;
 
+
 /**
  * A record that represents a request for user authentication.
  * This record is used to encapsulate the username and password provided by a user
@@ -13,4 +14,5 @@ package com.ams.dtos.loginDto;
  * @param password The password for the user. This should be handled securely throughout
  *                 the authentication process to prevent exposure of sensitive information.
  */
+
 public record LoginRequest(String username, String password) { }

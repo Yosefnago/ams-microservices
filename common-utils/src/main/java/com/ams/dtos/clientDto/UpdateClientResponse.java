@@ -1,5 +1,6 @@
 package com.ams.dtos.clientDto;
 
+
 /**
  * {@code UpdateClientResponse} is a simple data transfer object (DTO)
  * representing the outcome of a client update operation.

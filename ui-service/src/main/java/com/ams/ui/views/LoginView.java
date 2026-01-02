@@ -1,6 +1,7 @@
 package com.ams.ui.views;
 
 
+import com.ams.commonsecurity.utils.JwtUtil;
 import com.ams.dtos.loginDto.ClientLoginRequest;
 import com.ams.dtos.loginDto.ClientLoginResponse;
 import com.ams.ui.api.clientside.LoginService;
@@ -13,6 +14,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouteParameters;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import com.ams.dtos.loginDto.LoginRequest;
@@ -32,66 +34,39 @@ import org.springframework.beans.factory.annotation.Autowired;
 @AnonymousAllowed
 public class LoginView extends VerticalLayout {
 
+    private final JwtUtil jwtUtil;
     private LoginService loginService;
     private LoginOverlay loginOverlay;
     private String selectedRole = "";
-    private Button accountantButton;
-    private Button clientButton;
-    private HorizontalLayout buttons;
     private Anchor registerLink;
 
 
     /**
      * Constructs the login view, setting up the UI components for user interaction.
      */
-    public LoginView(@Autowired LoginService loginService) {
+    public LoginView(@Autowired LoginService loginService, JwtUtil jwtUtil) {
         this.loginService = loginService;
+        this.jwtUtil = jwtUtil;
 
         setSizeFull();
         loginOverlay = new LoginOverlay();
         loginOverlay.setTitle("Ams");
         loginOverlay.setDescription("Accountant Management System");
 
-        loginOverlay.addLoginListener(a -> authenticate(a.getUsername(), a.getPassword(),selectedRole));
+        loginOverlay.addLoginListener(a -> authenticate(a.getUsername(), a.getPassword()));
         loginOverlay.setOpened(true);
 
         componentsStyles();
 
-        add(buttons, registerLink, loginOverlay);
+        add( registerLink, loginOverlay);
 
     }
     /**
      *Add listeners to buttons and component styles.
      */
     private void componentsStyles() {
-        accountantButton = new Button("רואה חשבון");
-        clientButton = new Button("לקוח");
 
-        accountantButton.addClickListener(e -> {
-            this.selectedRole = "ACCOUNTANT";
-            System.out.println(selectedRole);
-            highlightSelectedButton(accountantButton, clientButton);
-            loginOverlay.setTitle("Ams - Accountant");
-        });
 
-        clientButton.addClickListener(e -> {
-            this.selectedRole = "CLIENT";
-            highlightSelectedButton(clientButton, accountantButton);
-            loginOverlay.setTitle("Ams - Client");
-        });
-
-        accountantButton.getStyle().set("font-weight", "bold");
-        clientButton.getStyle().set("font-weight", "bold");
-
-        buttons = new HorizontalLayout(accountantButton, clientButton);
-        buttons.setSpacing(true);
-
-        buttons.getStyle()
-                .set("position", "fixed")
-                .set("top", "15px")
-                .set("left", "50%")
-                .set("transform", "translateX(-50%)")
-                .set("z-index", "10000");
 
         registerLink = new Anchor("/register", "אין לך חשבון? הירשם כאן");
         registerLink.getStyle()
@@ -108,6 +83,8 @@ public class LoginView extends VerticalLayout {
             loginOverlay.setOpened(false);
             UI.getCurrent().navigate(RegisterView.class);
         });
+
+
     }
 
     /**
@@ -117,55 +94,38 @@ public class LoginView extends VerticalLayout {
      * @param username The user's username.
      * @param password The user's password.
      */
-    private void authenticate(String username, String password,String role) {
+    private void authenticate(String username, String password) {
 
         loginOverlay.setEnabled(false);
-        if (role.equals("ACCOUNTANT")) {
 
-                LoginResponse response = loginService.loginAccountant(new LoginRequest(username, password));
 
-                if (response.message() != null && response.success()) {
+        LoginResponse response = loginService.loginAccountant(new LoginRequest(username, password));
 
-                    String token = response.token();
-                    System.out.println(token);
+        if (response.message() != null && response.success()) {
 
-                    VaadinSession.getCurrent().setAttribute("jwt", token);
-                    loginOverlay.setOpened(false);
+            String token = response.token();
 
-                    UI.getCurrent().navigate(DashboardView.class);
-                    Notification
-                            .show("ברוך הבא " + username)
-                            .setPosition(Notification.Position.MIDDLE);
-                } else {
-                    Notification.show(response.message(), 3000, Notification.Position.MIDDLE);
-                    loginOverlay.setError(true);
-                    loginOverlay.setEnabled(true);
-                }
+            VaadinSession.getCurrent().setAttribute("jwt", token);
+            loginOverlay.setOpened(false);
 
-        } else if (role.equals("CLIENT")) {
 
-            ClientLoginResponse response = loginService.clientLogin(new ClientLoginRequest(username, password));
+            String clientId = jwtUtil.extractClientId(token);
 
-            if (response != null && response.success()) {
 
-                String token = response.token();
-                VaadinSession.getCurrent().setAttribute("jwt", token);
-
-                loginOverlay.setOpened(false);
-                UI.getCurrent().navigate("case/" + response.clientId());
-                Notification
-                        .show("ברוך הבא " + username)
-                        .setPosition(Notification.Position.MIDDLE);} else {
-                Notification.show(response.message(), 3000, Notification.Position.MIDDLE);
-                loginOverlay.setError(true);
-                loginOverlay.setEnabled(true);
-            }
+            UI.getCurrent().navigate(ClientCaseView.class,
+                    new RouteParameters("clientId", clientId));
+            Notification
+                    .show("ברוך הבא " + username)
+                    .setPosition(Notification.Position.MIDDLE);
+        } else {
+            Notification.show("שם משתמש או סיסמא שגויים", 3000, Notification.Position.MIDDLE);
+            loginOverlay.setError(true);
+            loginOverlay.setEnabled(true);
         }
+
+
     }
-    private void highlightSelectedButton(Button selected, Button other) {
-        selected.getStyle().set("background-color", "#007bff").set("color", "white");
-        other.getStyle().remove("background-color").remove("color");
-    }
+
 }
 
 

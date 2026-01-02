@@ -1,5 +1,6 @@
 package com.ams.dtos.clientDto;
 
+
 /**
  * {@code LoadClientCaseDetailsRequest} is a data transfer object (DTO)
  * used to encapsulate the full editable case details of a specific client.
@@ -28,11 +29,6 @@ public record LoadClientCaseDetailsRequest(
         String clientId,
         String businessName,
         String email,
-        String phone,
-        String address,
-        String zip,
-        String businessType,
-        String bankName,
-        String bankBranch,
-        String bankAccountNumber) {
+        String phone
+        ) {
 }

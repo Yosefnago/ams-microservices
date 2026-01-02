@@ -1,5 +1,6 @@
 package com.ams.dtos.clientDto;
 
+
 /**
  * {@code LoadClientDetailsCaseResponse} is a Data Transfer Object representing the full details
  * of a client case for display in a detailed view or case management screen.
@@ -35,7 +36,5 @@ public record LoadClientDetailsCaseResponse(
         String businessName,
         String clientId,
         String email,
-        String phone,
-        String address,
-        String businessType
+        String phone
 ) {}

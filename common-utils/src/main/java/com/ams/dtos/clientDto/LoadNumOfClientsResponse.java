@@ -1,5 +1,6 @@
 package com.ams.dtos.clientDto;
 
+
 /**
  * {@code LoadNumOfClientsResponse} is a Data Transfer Object used to return the total number of clients
  * associated with a specific accountant or user.

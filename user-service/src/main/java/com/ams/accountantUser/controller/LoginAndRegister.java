@@ -2,7 +2,6 @@ package com.ams.accountantUser.controller;
 
 
 import com.ams.accountantUser.entity.AccountantUser;
-import com.ams.accountantUser.reposiroty.AccountantUserRepository;
 import com.ams.accountantUser.service.AccountantUserService;
 import com.ams.accountantUser.service.CustomUserDetailsService;
 import com.ams.commonsecurity.utils.JwtUtil;
@@ -14,13 +13,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import java.util.Optional;
 /**
  * Controller that handles user authentication operations such as registration and login.

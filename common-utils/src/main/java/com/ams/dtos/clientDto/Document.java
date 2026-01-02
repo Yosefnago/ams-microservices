@@ -1,7 +1,7 @@
 package com.ams.dtos.clientDto;
 
-import java.time.LocalDateTime;
 
+import java.time.LocalDateTime;
 public class Document {
     private String name;
     private LocalDateTime uploadTime;

@@ -32,7 +32,8 @@ import org.springframework.web.client.RestTemplate;
  * @author Yosef Nago
  */
 @Configuration
-public class RestTemplateConfig {
+public class
+RestTemplateConfig {
 
     /**
      * Defines a singleton {@link RestTemplate} bean used to make synchronous HTTP requests.

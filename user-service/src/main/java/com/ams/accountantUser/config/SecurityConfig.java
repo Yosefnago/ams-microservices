@@ -1,6 +1,9 @@
 package com.ams.accountantUser.config;
 
 
+import com.ams.commonsecurity.utils.JwtUtil;
+import jakarta.servlet.Filter;
+import org.springframework.boot.web.servlet.filter.OrderedFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -8,6 +11,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
  * {@code SecurityConfig} is the central configuration class for setting up
@@ -28,11 +32,17 @@ import org.springframework.security.web.SecurityFilterChain;
  * <p><b>Tip:</b> In a production environment, it's recommended to restrict access to endpoints using {@code .authenticated()} or roles, and to integrate a JWT filter.</p>
  *
  * @author Yosef Nago
- * @see com.ams.commonsecurity.utils.JwtUtil for JWT handling
+ * @see JwtUtil for JWT handling
  */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    private final JwtAuthFilter jwtAuthFilter;
+
+    public  SecurityConfig(JwtAuthFilter jwtAuthFilter) {
+        this.jwtAuthFilter = jwtAuthFilter;
+    }
 
     /**
      * Configures the {@link HttpSecurity} object with basic security settings.
@@ -50,8 +60,10 @@ public class SecurityConfig {
         return http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
+                        .requestMatchers("/auth/login","/auth/register").permitAll()
+                        .anyRequest().authenticated()
                 )
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
     /**

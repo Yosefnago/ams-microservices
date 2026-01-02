@@ -31,7 +31,7 @@ public class RegisterServiceImpl implements RegisterService {
             HttpEntity<RegisterRequest> entity = new HttpEntity<>(registerRequest, headers);
 
             ResponseEntity<RegisterResponse> response = restTemplate.postForEntity(
-                    "http://localhost:8080/auth/register",
+                    "http://localhost:8085/auth/register",
                     entity,
                     RegisterResponse.class
             );

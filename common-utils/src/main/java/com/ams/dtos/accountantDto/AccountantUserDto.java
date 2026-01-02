@@ -1,6 +1,7 @@
 package com.ams.dtos.accountantDto;
 
 
+
 /**
  * {@code AccountantUserDto} is a Data Transfer Object representing an accountant user in the system.
  * <p>

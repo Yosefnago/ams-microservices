@@ -1,5 +1,6 @@
 package com.ams.dtos.clientDto;
 
+
 /**
  * {@code ClientGridDto} is a lightweight Data Transfer Object used for displaying basic client information
  * in tabular views such as dashboards or grids.

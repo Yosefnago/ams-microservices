@@ -1,8 +1,7 @@
 package com.ams.ui.api.clientside.impl;
 
 
-import com.ams.dtos.loginDto.ClientLoginRequest;
-import com.ams.dtos.loginDto.ClientLoginResponse;
+
 import com.ams.dtos.loginDto.LoginRequest;
 import com.ams.dtos.loginDto.LoginResponse;
 import com.ams.ui.api.clientside.LoginService;
@@ -35,7 +34,7 @@ public class LoginServiceImpl implements LoginService {
 
         try {
             ResponseEntity<LoginResponse> response =
-                    restTemplate.postForEntity("http://localhost:8080/auth/login", entity, LoginResponse.class);
+                    restTemplate.postForEntity("http://localhost:8085/auth/login", entity, LoginResponse.class);
 
             if(response.getStatusCode().is2xxSuccessful()){
                 return response.getBody();
@@ -47,16 +46,5 @@ public class LoginServiceImpl implements LoginService {
         return null;
     }
 
-    @Override
-    public ClientLoginResponse clientLogin(ClientLoginRequest request){
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<ClientLoginRequest> entity = new HttpEntity<>(request, headers);
-
-        ResponseEntity<ClientLoginResponse> response =
-                restTemplate.postForEntity("http://localhost:8080/client/login", entity, ClientLoginResponse.class);
-
-        return response.getBody();
-    }
 
 }

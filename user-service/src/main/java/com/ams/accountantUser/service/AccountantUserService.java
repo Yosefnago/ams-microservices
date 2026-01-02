@@ -1,15 +1,14 @@
 package com.ams.accountantUser.service;
 
 
-import com.ams.dtos.registerDto.RegisterRequest;
 import com.ams.accountantUser.entity.AccountantUser;
-import com.ams.accountantUser.reposiroty.AccountantUserRepository;
+import com.ams.accountantUser.repository.AccountantUserRepository;
+import com.ams.dtos.registerDto.RegisterRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
-
 
 /**
  * {@code AccountantUserService} provides business logic for managing {@link AccountantUser} entities.
@@ -55,6 +54,8 @@ public class AccountantUserService  {
         accountantUser.setUsername(request.username());
         accountantUser.setPassword(passwordEncoder.encode(request.password()));
         accountantUser.setPhone(request.phoneNumber());
+        accountantUser.setTaxId(request.taxId());
+        accountantUser.setBusinessName(request.businessName());
         accountantUser.setEmail(request.email());
         accountantUser.setRole("ACCOUNTANT");
 
@@ -98,5 +99,13 @@ public class AccountantUserService  {
      */
     public boolean existsByUsername(String username) {
         return accountantUserRepository.findByUsername(username) != null;
+    }
+
+    public Optional<AccountantUser> getClientById(Long clientId) {
+        return accountantUserRepository.findById(clientId);
+
+    }
+    public boolean existsByClientId(String clientId) {
+        return accountantUserRepository.existsById(Long.parseLong(clientId));
     }
 }

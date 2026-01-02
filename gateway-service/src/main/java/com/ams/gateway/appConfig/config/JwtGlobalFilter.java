@@ -2,6 +2,8 @@ package com.ams.gateway.appConfig.config;
 
 
 import com.ams.commonsecurity.utils.JwtUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -40,6 +42,7 @@ import java.util.Set;
 @Component
 public class JwtGlobalFilter implements GlobalFilter, Ordered {
 
+    private static final Logger log = LoggerFactory.getLogger(JwtGlobalFilter.class);
     private final JwtUtil jwtUtil;
 
     /**
@@ -97,6 +100,7 @@ public class JwtGlobalFilter implements GlobalFilter, Ordered {
                 .header("X-User-Name", username)
                 .build();
 
+        log.info("User request {} authenticated ingateway header", username);
         return chain.filter(exchange.mutate().request(modifiedRequest).build());
     }
     /**
@@ -106,7 +110,7 @@ public class JwtGlobalFilter implements GlobalFilter, Ordered {
      * @return {@code true} if the path is public; {@code false} otherwise
      */
     private boolean isPublicPath(String path) {
-        return Set.of("/auth/login","/auth/register","/client/login","/","/index",
+        return Set.of("/auth/login","/auth/register","/","/index",
                 "/index.html","/frontend/","/VAADIN/","/app/","/favicon.ico").contains(path);
     }
     /**

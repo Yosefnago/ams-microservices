@@ -1,5 +1,6 @@
 package com.ams.dtos.loginDto;
 
+
 /**
  * A record that represents the response sent back to the client after an authentication attempt.
  * This record provides feedback on the success or failure of a login attempt, and in the case of success,
@@ -12,5 +13,6 @@ package com.ams.dtos.loginDto;
  * @param token   A JWT (JSON Web Token) or similar security token that the client can use to make authenticated
  *                requests to the server. This token is only provided if the login is successful.
  */
+
 public record LoginResponse(boolean success, String message, String token) {
 }

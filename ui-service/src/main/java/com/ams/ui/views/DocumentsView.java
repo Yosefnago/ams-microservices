@@ -155,7 +155,7 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         headers.setBearerAuth(token);
 
-        DocumentUploadRequest request = new DocumentUploadRequest(fileName,fileContent,clientId,status,LocalDate.now());
+        DocumentUploadRequest request = new DocumentUploadRequest(fileName,fileContent,clientId,LocalDate.now());
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
 
         ByteArrayResource fileAsResource = new ByteArrayResource(fileContent) {
@@ -173,7 +173,7 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
         ResponseEntity<DocumentUploadResponse> response = restTemplate.exchange(
-                "http://localhost:8080/document/upload",
+                "http://localhost:8085/document/upload",
                 HttpMethod.POST,
                 requestEntity,
                 DocumentUploadResponse.class
@@ -211,7 +211,6 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
         grid.addColumn(DocumentGrid::fileName).setHeader("שם מסמך");
         grid.addColumn(DocumentGrid::clientId).setHeader("ת.ז . ח.פ");
         grid.addColumn(DocumentGrid::uploadedAt).setHeader("תאריך העלאה");
-        grid.addColumn(DocumentGrid::status).setHeader("סטטוס");
 
         grid.setSizeFull();
         grid.getStyle().set("direction", "rtl");
@@ -220,7 +219,6 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
         grid.getColumns().get(0).setSortable(true);
         grid.getColumns().get(1).setSortable(true);
         grid.getColumns().get(2).setSortable(true);
-        grid.getColumns().get(3).setSortable(true);
 
         grid.addComponentColumn(client -> {
             HorizontalLayout actions = new HorizontalLayout();
@@ -240,7 +238,7 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
                     headers.setContentType(MediaType.APPLICATION_JSON);
 
                     HttpEntity<Void> entity = new HttpEntity<>(headers);
-                    String url = "http://localhost:8080/document/get-document-rejectReason/" + documentNameSelected;
+                    String url = "http://localhost:8085/document/get-document-rejectReason/" + documentNameSelected;
 
                     ResponseEntity<String> response = restTemplate.exchange(
                             url,
@@ -276,6 +274,7 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
 
         grid.addSelectionListener(event -> {
            documentNameSelected = event.getFirstSelectedItem().get().fileName();
+            System.out.println(documentNameSelected);
         });
 
 
@@ -302,7 +301,7 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
 
         try {
             ResponseEntity<LoadDocumentsResponse> response = restTemplate.exchange(
-                    "http://localhost:8080/document/load-documents",
+                    "http://localhost:8085/document/load-documents",
                     HttpMethod.GET, entity, LoadDocumentsResponse.class);
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
@@ -328,7 +327,7 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        String url = "http://localhost:8080/document/delete-document/" + documentNameSelected;
+        String url = "http://localhost:8085/document/delete-document/" + documentNameSelected;
 
         try {
             ResponseEntity<Void> response = restTemplate.exchange(
@@ -361,7 +360,7 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
         headers.setAccept(List.of(MediaType.APPLICATION_OCTET_STREAM));
 
         HttpEntity<Void> entity = new HttpEntity<>(headers);
-        String url = "http://localhost:8080/document/get-document/" + documentNameSelected;
+        String url = "http://localhost:8085/document/get-document/" + documentNameSelected;
 
         try {
             ResponseEntity<byte[]> response = restTemplate.exchange(url, HttpMethod.GET, entity, byte[].class);
@@ -438,7 +437,7 @@ public class DocumentsView extends VerticalLayout implements BeforeEnterObserver
 
         try {
             ResponseEntity<Void> response = restTemplate.exchange(
-                    "http://localhost:8080/document/update-document-status",
+                    "http://localhost:8085/document/update-document-status",
                     HttpMethod.PUT,
                     entity,
                     Void.class

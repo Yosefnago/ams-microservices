@@ -18,54 +18,15 @@ public class ClientServiceImpl implements ClientHttpService {
         this.restTemplate = restTemplate;
     }
 
-    @Override
-    public LoadNumOfClientsResponse loadNumOfClients(String token) {
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(token);
 
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-        ResponseEntity<LoadNumOfClientsResponse> response = restTemplate.exchange(
-                "http://localhost:8080/client/load-numOfclients",
-                HttpMethod.GET,
-                entity,
-                LoadNumOfClientsResponse.class);
-
-        return response.getBody();
-
-    }
-    @Override
-    public GrantAccessResponse grantAccess(GrantAccessRequestDto request, String token) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(token);
-
-        HttpEntity<GrantAccessRequestDto> entity = new HttpEntity<>(request, headers);
-
-        String url = "http://localhost:8080/client/grant-access";
-
-        try {
-            ResponseEntity<GrantAccessResponse> response =
-                    restTemplate.exchange(url, HttpMethod.POST, entity, GrantAccessResponse.class);
-
-            if (response.getStatusCode() == HttpStatus.OK) {
-                return response.getBody();
-            }
-        }catch (HttpClientErrorException e){
-            String message = e.getResponseBodyAsString();
-            return new GrantAccessResponse(false,message);
-        }
-        return null;
-    }
     @Override
     public LoadClientDetailsCaseResponse loadClientDetails(String token, String clientId) {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
 
         HttpEntity<Void> entity = new HttpEntity<>(headers);
-        String url = "http://localhost:8080/client/load-case-details?clientId=" + clientId;
+        String url = "http://localhost:8085/user/load-case-details?clientId=" + clientId;
 
         ResponseEntity<LoadClientDetailsCaseResponse> response =
                 restTemplate.exchange(url, HttpMethod.GET, entity, LoadClientDetailsCaseResponse.class);

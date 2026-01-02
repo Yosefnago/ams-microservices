@@ -2,8 +2,7 @@ package com.ams.accountantUser.service;
 
 
 import com.ams.accountantUser.entity.AccountantUser;
-import com.ams.accountantUser.reposiroty.AccountantUserRepository;
-import org.springframework.context.annotation.Bean;
+import com.ams.accountantUser.repository.AccountantUserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -11,7 +10,6 @@ import org.springframework.stereotype.Service;
 /**
  * CustomUserDetailsService is an implementation of {@link UserDetailsService}
  * used by Spring Security to load user-specific data during authentication.
- *
  * This implementation retrieves {@link AccountantUser} entities from the database
  * and converts them into Spring Security {@link UserDetails}.
  */

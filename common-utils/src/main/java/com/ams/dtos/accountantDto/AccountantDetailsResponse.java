@@ -1,5 +1,6 @@
 package com.ams.dtos.accountantDto;
 
+
 /**
  * {@code AccountantDetailsResponse} is a data transfer object (DTO)
  * used to encapsulate detailed information about an accountant.
@@ -15,5 +16,6 @@ package com.ams.dtos.accountantDto;
  * @param phone     the accountant's phone number
  * @param id        the unique database identifier of the accountant
  */
+
 public record AccountantDetailsResponse (boolean success,String message,String username, String email,String phone,Long id){
 }

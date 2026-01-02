@@ -9,5 +9,5 @@ import com.ams.dtos.loginDto.LoginResponse;
 public interface LoginService {
 
     LoginResponse loginAccountant(LoginRequest request);
-    ClientLoginResponse clientLogin(ClientLoginRequest request);
+
 }

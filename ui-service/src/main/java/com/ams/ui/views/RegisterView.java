@@ -7,6 +7,7 @@ import com.ams.dtos.registerDto.RegisterResponse;
 import com.ams.ui.api.clientside.RegisterService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Header;
@@ -19,8 +20,13 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.Random;
 
 
 /**
@@ -55,10 +61,13 @@ public class RegisterView extends VerticalLayout {
     private PasswordField password;
     private PasswordField confirmPassword;
     private TextField phone;
+    private TextField taxId;
+    private TextField businessName;
     private Div div;
     private FormLayout formLayout;
 
-     /**
+
+    /**
      * Constructs the registration view with an injected {@link RestTemplate} for HTTP communication.
      *
      * @param restTemplate the {@code RestTemplate} used for sending registration requests to the server
@@ -98,6 +107,7 @@ public class RegisterView extends VerticalLayout {
         username = new TextField("Username");
         email = new EmailField("Email");
         phone = new TextField("Phone");
+        taxId = new TextField("ID");
         password = new PasswordField("Password");
         confirmPassword = new PasswordField("Confirm Password");
         saveButton = new Button("Save");
@@ -108,12 +118,17 @@ public class RegisterView extends VerticalLayout {
         phone.setManualValidation(true);
         phone.setMinLength(10);
         phone.setMaxLength(10);
+        taxId.setMinLength(9);
+        taxId.setMaxLength(9);
+        businessName = new TextField("Business Name");
 
         formLayout.add(firstName,1);
         formLayout.add(lastName,1);
         formLayout.add(username,1);
         formLayout.add(email,1);
         formLayout.add(phone,2);
+        formLayout.add(taxId,2);
+        formLayout.add(businessName,2);
         formLayout.add(password,1);
         formLayout.add(confirmPassword,1);
         formLayout.add(saveButton,2);
@@ -141,26 +156,26 @@ public class RegisterView extends VerticalLayout {
      */
     private void save()  {
 
-        try {
-            RegisterRequest registerRequest = new RegisterRequest(
-                    firstName.getValue(),
-                    lastName.getValue(),
-                    username.getValue(),
-                    email.getValue(),
-                    password.getValue(),
-                    phone.getValue()
-            );
+        RegisterRequest registerRequest = new RegisterRequest(
+                firstName.getValue(),
+                lastName.getValue(),
+                username.getValue(),
+                email.getValue(),
+                password.getValue(),
+                phone.getValue(),
+                taxId.getValue(),
+                businessName.getValue()
+        );
 
-            RegisterResponse response = registerService.register(registerRequest);
+        RegisterResponse response = registerService.register(registerRequest);
 
-            if (response != null && response.success()) {
-                Notification.show(response.message(), 3000, Notification.Position.MIDDLE);
-                UI.getCurrent().navigate(LoginView.class);
-            }else{
-                Notification.show(response.message(), 3000, Notification.Position.MIDDLE);
-            }
-        }catch (HttpClientErrorException e) {
-            Notification.show(e.getMessage(), 3000, Notification.Position.MIDDLE);
+        if (response != null && response.success()) {
+            Notification.show(response.message(), 3000, Notification.Position.MIDDLE);
+            UI.getCurrent().navigate(LoginView.class);
+        } else {
+            Notification.show(response.message(), 3000, Notification.Position.MIDDLE);
         }
+
     }
+
 }

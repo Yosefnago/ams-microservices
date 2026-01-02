@@ -4,8 +4,6 @@ package com.ams.accountantUser.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * {@code AccountantUser} represents a registered accountant user in the system.
@@ -24,7 +22,7 @@ import java.util.List;
  * <p>This entity is persisted in the {@code accountant_Users} table.</p>
  *
  * @author Yosef Nago
- * @see com.ams.accountantUser.reposiroty.AccountantUserRepository
+ * @see com.ams.accountantUser.repository.AccountantUserRepository
  */
 @Table(name = "accountant_Users")
 @Entity
@@ -44,6 +42,12 @@ public class AccountantUser {
 
     @Column(name = "Username",nullable = false,length = 25,unique=true)
     private String username;
+
+    @Column(name = "Business_name", nullable = false)
+    private String businessName; // שם העסק או החברה
+
+    @Column(name = "tax_id")
+    private String taxId; // תעוזת זהות / ח.פ
 
     @Column(name = "Password",nullable = false)
     private String password;

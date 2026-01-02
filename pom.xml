@@ -21,11 +21,10 @@
 
 	<modules>
 		<module>gateway-service</module>
-		<module>ereuka-server</module>
+		<module>eureka-server</module>
 		<module>user-service</module>
 		<module>ui-service</module>
 		<module>common-utils</module>
-		<module>client-service</module>
 		<module>common-security</module>
 	</modules>
 
